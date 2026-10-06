@@ -1,0 +1,87 @@
+/* Tasuku design tokens. Every component reads these; nothing hard-codes a colour. */
+:root {
+  --font-sans: 'Inter', 'Noto Sans Thai', 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', system-ui,
+    -apple-system, 'Segoe UI', sans-serif;
+
+  --c-bg: #f4f5f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #f8f9fc;
+  --c-border: #e6e8ef;
+  --c-border-strong: #d3d7e2;
+  --c-text: #14161f;
+  --c-text-2: #454a5c;
+  --c-text-3: #6b7085;
+
+  --c-primary: #5650f0;
+  --c-primary-hover: #453ed6;
+  --c-primary-soft: #eeedfe;
+  --c-primary-border: #cfccfb;
+
+  /* Tone pairs: tinted background + readable foreground. */
+  --c-slate-bg: #eef0f4;
+  --c-slate-fg: #4a5065;
+  --c-blue-bg: #e2edff;
+  --c-blue-fg: #1f5fd1;
+  --c-amber-bg: #fff1d6;
+  --c-amber-fg: #a35a00;
+  --c-green-bg: #dcf5e7;
+  --c-green-fg: #137a4b;
+  --c-red-bg: #ffe3e3;
+  --c-red-fg: #c92a2a;
+  --c-violet-bg: #f1e7fd;
+  --c-violet-fg: #7a35c4;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(20, 22, 31, 0.06);
+  --shadow-md: 0 4px 14px rgba(20, 22, 31, 0.08);
+  --shadow-lg: 0 18px 48px rgba(20, 22, 31, 0.16);
+
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 19px;
+  --fs-2xl: 24px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
