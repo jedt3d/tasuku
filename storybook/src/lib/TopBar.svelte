@@ -1,6 +1,7 @@
 <script>
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
+  import defaultLogo from '../assets/logo.svg';
 
   const locales = ['th', 'en', 'ja'];
 
@@ -14,6 +15,9 @@
     active = 'overview',
     user = 'Somchai Prasert',
     locale = $bindable('en'),
+    // logo: URL of an SVG. Set wordmark to false when the SVG already contains the name.
+    logo = defaultLogo,
+    wordmark = true,
     // minimal: no navigation, used for Customers and the sign-in page.
     minimal = false,
   } = $props();
@@ -21,8 +25,8 @@
 
 <header class="topbar">
   <a class="brand" href="#top">
-    <span class="mark">タ</span>
-    <span class="name">Tasuku</span>
+    <img class="logo" src={logo} alt={wordmark ? '' : 'Tasuku'} />
+    {#if wordmark}<span class="name">Tasuku</span>{/if}
   </a>
 
   {#if !minimal}
@@ -70,16 +74,10 @@
     color: var(--c-text);
     text-decoration: none;
   }
-  .mark {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: linear-gradient(140deg, #7a74ff, var(--c-primary));
-    color: #fff;
-    font-weight: 700;
-    font-size: 16px;
+  .logo {
+    display: block;
+    height: 30px;
+    width: auto;
   }
   .name {
     font-weight: 700;

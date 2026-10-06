@@ -5,18 +5,42 @@ import SignInScreen from '../screens/SignInScreen.svelte';
 import TaskScreen from '../screens/TaskScreen.svelte';
 
 // PROTOTYPE screens for the v1 spec (issue #1). Mock data, nothing is saved.
-export default { title: 'Screens', parameters: { layout: 'fullscreen' } };
+export default { title: 'Prototypes/Screens', parameters: { layout: 'fullscreen' } };
 
-const screen = (Component, name, props = {}) => ({ name, render: () => ({ Component, props }) });
-
-export const SignIn = screen(SignInScreen, '1 Sign in');
-export const SignInSent = screen(SignInScreen, '1 Sign in · link sent', { sent: true });
-export const Overview = screen(OverviewScreen, '2 Overview by Organization');
-export const OverviewNewTask = screen(OverviewScreen, '2 Overview · New Task panel', { newTask: true });
-export const Organization = screen(OrganizationScreen, '3 Organization activity');
-export const OrganizationPeek = screen(OrganizationScreen, '3 Organization · Task peek', { peek: true, selectedPoint: null });
-export const TaskOwner = screen(TaskScreen, '4 Task · Owner');
-export const TaskResolved = screen(TaskScreen, '4 Task · Resolved, as Task Master', { status: 'resolved', role: 'taskmaster' });
-export const TaskReadOnly = screen(TaskScreen, '4 Task · Staff not on the Task', { role: 'reader' });
-export const CustomerTask = screen(CustomerTaskScreen, '5 Customer · In progress');
-export const CustomerResolved = screen(CustomerTaskScreen, '5 Customer · asked to confirm', { status: 'resolved' });
+export const SignIn = { name: '1 Sign in', render: () => ({ Component: SignInScreen }) };
+export const SignInSent = {
+  name: '1 Sign in · link sent',
+  render: () => ({ Component: SignInScreen, props: { sent: true } }),
+};
+export const Overview = { name: '2 Overview · by Organization', render: () => ({ Component: OverviewScreen }) };
+export const OverviewActivity = {
+  name: '2 Overview · Activity',
+  render: () => ({ Component: OverviewScreen, props: { initialView: 'activity' } }),
+};
+export const OverviewNewTask = {
+  name: '2 Overview · New Task panel',
+  render: () => ({ Component: OverviewScreen, props: { newTask: true } }),
+};
+export const Organization = { name: '3 Organization · activity', render: () => ({ Component: OrganizationScreen }) };
+export const OrganizationPeek = {
+  name: '3 Organization · Task peek',
+  render: () => ({ Component: OrganizationScreen, props: { peek: true, selectedPoint: null } }),
+};
+export const TaskOwner = { name: '4 Task · Owner', render: () => ({ Component: TaskScreen }) };
+export const TaskCollaborator = {
+  name: '4 Task · Collaborator',
+  render: () => ({ Component: TaskScreen, props: { role: 'collaborator' } }),
+};
+export const TaskResolved = {
+  name: '4 Task · Resolved, as Task Master',
+  render: () => ({ Component: TaskScreen, props: { status: 'resolved', role: 'taskmaster' } }),
+};
+export const TaskReadOnly = {
+  name: '4 Task · Staff not on the Task',
+  render: () => ({ Component: TaskScreen, props: { role: 'reader' } }),
+};
+export const CustomerTask = { name: '5 Customer · In progress', render: () => ({ Component: CustomerTaskScreen }) };
+export const CustomerResolved = {
+  name: '5 Customer · asked to confirm',
+  render: () => ({ Component: CustomerTaskScreen, props: { status: 'resolved' } }),
+};

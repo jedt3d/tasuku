@@ -3,23 +3,28 @@
   import Badge from './Badge.svelte';
   import Icon from './Icon.svelte';
 
-  // entries: { kind: 'comment' | 'event' | 'thread' | 'deleted' | 'more', ... }
-  // viewer "customer" never receives Threads; here it also hides them, to show the Customer's view.
-  let { entries = [], viewer = 'staff', cards = false } = $props();
+  // entries: { kind: 'comment' | 'event' | 'deleted' | 'more', threads?: [...] }
+  // A Thread hangs off the entry it was started from. Customers never receive Threads.
+  // actions: the viewer may write on this Task, so entries offer "Start Thread".
+  let { entries = [], viewer = 'staff', cards = false, actions = false, onthread } = $props();
 
-  const visible = $derived(
-    viewer === 'customer' ? entries.filter((e) => e.kind !== 'thread') : entries,
-  );
+  const staffView = $derived(viewer !== 'customer');
 </script>
 
+{#snippet tools(entry)}
+  {#if staffView && actions}
+    <span class="tools">
+      <button class="tool" onclick={() => onthread?.(entry)}><Icon name="thread" size={14} />Start Thread</button>
+    </span>
+  {/if}
+{/snippet}
+
 <ol class="timeline" class:cards>
-  {#each visible as entry, i (i)}
+  {#each entries as entry, i (i)}
     <li class="entry">
       <div class="rail">
         {#if entry.kind === 'comment'}
           <Avatar name={entry.author} size={40} />
-        {:else if entry.kind === 'thread'}
-          <span class="node branch"><Icon name="thread" size={15} /></span>
         {:else}
           <span class="node"
             ><Icon name={entry.kind === 'more' ? 'more' : (entry.icon ?? 'activity')} size={14} /></span
@@ -34,6 +39,7 @@
             {#if entry.role}<span class="role">{entry.role}</span>{/if}
             <time>{entry.time}</time>
             {#if entry.edited}<span class="muted">· edited</span>{/if}
+            {@render tools(entry)}
           </div>
           <div class="bubble">
             <p>{entry.text}</p>
@@ -52,35 +58,46 @@
             {/if}
           </div>
         {:else if entry.kind === 'event'}
-          <p class="event">
+          <p class="line">
             <strong>{entry.actor}</strong>
             {entry.text}
             {#if entry.status}<Badge status={entry.status} />{/if}
             <time>{entry.time}</time>
+            {@render tools(entry)}
           </p>
         {:else if entry.kind === 'deleted'}
-          <p class="event muted">A comment was removed by a Task Master <time>{entry.time}</time></p>
+          <p class="line muted">A comment was removed by a Task Master <time>{entry.time}</time></p>
         {:else if entry.kind === 'more'}
-          <button class="more">View {entry.count} earlier entries</button>
-        {:else if entry.kind === 'thread'}
-          <section class="thread" aria-label="Thread: {entry.title}">
-            <header>
-              <span class="tlabel"><Icon name="lock" size={13} /> Thread · Staff only</span>
-              <strong>{entry.title}</strong>
-              <Badge status={entry.status} />
-              <span class="resp"><Avatar name={entry.responsible} size={22} />{entry.responsible}</span>
-            </header>
-            {#each entry.messages as message, m (m)}
-              <div class="reply">
-                <Avatar name={message.author} size={26} />
-                <div>
-                  <span class="rhead"><strong>{message.author}</strong><time>{message.time}</time></span>
-                  <p>{message.text}</p>
+          <button class="morebtn">View {entry.count} earlier entries</button>
+        {/if}
+
+        {#if staffView && entry.threads}
+          {#each entry.threads as thread (thread.title)}
+            <section class="threadbox" aria-label="Thread: {thread.title}">
+              <header>
+                <span class="tlabel"><Icon name="lock" size={13} /> Thread · Staff only</span>
+                <strong>{thread.title}</strong>
+                <Badge status={thread.status} />
+                <span class="resp"><Avatar name={thread.responsible} size={22} />{thread.responsible}</span>
+              </header>
+              {#each thread.messages as message, m (m)}
+                <div class="reply">
+                  <Avatar name={message.author} size={26} />
+                  <div>
+                    <span class="rhead"><strong>{message.author}</strong><time>{message.time}</time></span>
+                    <p>{message.text}</p>
+                  </div>
                 </div>
-              </div>
-            {/each}
-            {#if entry.more}<button class="more">View {entry.more} more replies</button>{/if}
-          </section>
+              {/each}
+              {#if thread.more}<button class="morebtn">View {thread.more} more replies</button>{/if}
+              {#if actions && thread.status === 'open'}
+                <div class="treply">
+                  <input placeholder="Reply in this Thread…" aria-label="Reply in this Thread" />
+                  <button class="tool">Mark Settled</button>
+                </div>
+              {/if}
+            </section>
+          {/each}
         {/if}
       </div>
     </li>
@@ -128,10 +145,6 @@
   }
   .rail :global(.avatar) {
     box-shadow: 0 0 0 4px var(--c-surface);
-  }
-  .node.branch {
-    background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
   }
 
   .head {
@@ -203,7 +216,7 @@
     font-weight: 500;
   }
 
-  .event {
+  .line {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -211,11 +224,46 @@
     min-height: 28px;
     color: var(--c-text-2);
   }
-  .event strong {
+  .line strong {
     color: var(--c-text);
   }
 
-  .more {
+  /* Actions on an entry: shown on hover or focus, and always where there is no hover. */
+  .tools {
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .entry:hover .tools,
+  .tools:focus-within {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .tools {
+      opacity: 1;
+    }
+  }
+  .tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 26px;
+    padding: 0 9px;
+    border: 1px solid var(--c-border);
+    border-radius: 7px;
+    background: var(--c-surface);
+    color: var(--c-primary-hover);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tool:hover {
+    border-color: var(--c-primary-border);
+    background: var(--c-primary-soft);
+  }
+
+  .morebtn {
     height: 28px;
     padding: 0;
     border: 0;
@@ -225,15 +273,29 @@
     cursor: pointer;
   }
 
-  .thread {
+  .threadbox {
+    position: relative;
     display: grid;
     gap: 12px;
+    margin-top: 12px;
     padding: 12px 14px;
     border: 1px dashed var(--c-primary-border);
     border-radius: var(--r-lg);
     background: #fbfaff;
   }
-  .thread header {
+  /* The branch: an elbow from the Timeline's line into the Thread. */
+  .threadbox::before {
+    content: '';
+    position: absolute;
+    left: -35px;
+    top: -12px;
+    width: 34px;
+    height: 34px;
+    border-left: 2px solid var(--c-primary-border);
+    border-bottom: 2px solid var(--c-primary-border);
+    border-bottom-left-radius: 14px;
+  }
+  .threadbox header {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -268,5 +330,22 @@
   }
   .reply p {
     color: var(--c-text-2);
+  }
+  .treply {
+    display: flex;
+    gap: 8px;
+  }
+  .treply input {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--c-primary-border);
+    border-radius: 8px;
+    background: var(--c-surface);
+    font-size: var(--fs-sm);
+  }
+  .treply .tool {
+    height: 32px;
   }
 </style>

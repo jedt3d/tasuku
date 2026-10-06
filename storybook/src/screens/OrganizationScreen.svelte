@@ -8,12 +8,14 @@
   import SlideOver from '../lib/SlideOver.svelte';
   import Timeline from '../lib/Timeline.svelte';
   import TopBar from '../lib/TopBar.svelte';
-  import { activity, orgStats, orgTasks, task } from '../lib/mock.js';
+  import { activityLegend, activityRange, lannaActivity, orgStats, orgTasks, task } from '../lib/mock.js';
 
-  let { peek = false, selectedPoint = 13 } = $props();
+  let { peek = false, selectedPoint = 'Lanna Medical Group/Dr. Ploy Suwan/10' } = $props();
 
   let selected = $state(selectedPoint);
   let peeked = $state(peek ? orgTasks[0] : null);
+  // A dot belongs to a Task; open that Task in the side panel.
+  const peekAt = (dot) => (peeked = orgTasks.find((t) => dot.title.startsWith(t.id)) ?? orgTasks[0]);
 </script>
 
 <div class="app">
@@ -44,16 +46,13 @@
 
     <ActivityScatter
       title="Support activity"
-      points={activity}
-      months={['August', 'September', 'October']}
-      legend={[
-        { tone: 'primary', label: 'Task opened' },
-        { tone: '', label: 'Comment or event' },
-        { tone: 'amber', label: 'Resolved' },
-        { tone: 'green', label: 'Done' },
-      ]}
+      groups={[lannaActivity]}
+      legend={activityLegend}
+      expanded={[lannaActivity.name]}
+      {...activityRange}
       bind:selected
-      onopen={() => (peeked = orgTasks[0])}
+      onpeek={peekAt}
+      onopen={peekAt}
     />
 
     <section class="panel">

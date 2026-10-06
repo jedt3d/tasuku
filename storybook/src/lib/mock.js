@@ -25,6 +25,23 @@ export const task = {
       time: '12 Oct, 09:20',
       text: 'แผนอัปเกรด PACS แนบมาแล้วครับ ใช้เวลาประมาณ 4 ชั่วโมง ขอ downtime คืนวันเสาร์ที่ 17 ต.ค. หลัง 22:00 น.',
       files: [{ name: 'pacs-upgrade-plan.pdf', kind: 'pdf', size: '1.2 MB' }],
+      // Threads hang off the entry they were started from.
+      threads: [
+        {
+          title: 'Is the staging server ready?',
+          status: 'settled',
+          responsible: staff.kenji,
+          more: 3,
+          messages: [
+            {
+              author: staff.kenji,
+              time: '13 Oct, 10:12',
+              text: 'バックアップは完了しました。Staging has been on the new build since this morning.',
+            },
+            { author: staff.nicha, time: '13 Oct, 14:40', text: 'Verified — DICOM send and receive both pass.' },
+          ],
+        },
+      ],
     },
     {
       kind: 'event',
@@ -48,6 +65,20 @@ export const task = {
       time: '12 Oct, 11:02',
       text: 'รับทราบค่ะ คืนวันเสาร์สะดวก ขอแจ้งแผนกรังสีก่อนนะคะ แนบผังห้อง server มาให้ด้วยค่ะ',
       files: [{ name: 'server-room.webp', kind: 'image', size: '184 KB' }],
+      threads: [
+        {
+          title: 'Site access permit for Saturday night',
+          status: 'open',
+          responsible: staff.nicha,
+          messages: [
+            {
+              author: staff.nicha,
+              time: '14 Oct, 09:05',
+              text: 'ส่งแบบฟอร์มขอเข้าพื้นที่ไปแล้ว รออนุมัติจากฝ่ายอาคาร',
+            },
+          ],
+        },
+      ],
     },
     {
       kind: 'event',
@@ -55,34 +86,6 @@ export const task = {
       actor: staff.owner,
       text: `added ${staff.nicha} and ${staff.kenji} as Collaborators`,
       time: '13 Oct, 08:45',
-    },
-    {
-      kind: 'thread',
-      title: 'Is the staging server ready?',
-      status: 'settled',
-      responsible: staff.kenji,
-      more: 3,
-      messages: [
-        {
-          author: staff.kenji,
-          time: '13 Oct, 10:12',
-          text: 'バックアップは完了しました。Staging has been on the new build since this morning.',
-        },
-        { author: staff.nicha, time: '13 Oct, 14:40', text: 'Verified — DICOM send and receive both pass.' },
-      ],
-    },
-    {
-      kind: 'thread',
-      title: 'Site access permit for Saturday night',
-      status: 'open',
-      responsible: staff.nicha,
-      messages: [
-        {
-          author: staff.nicha,
-          time: '14 Oct, 09:05',
-          text: 'ส่งแบบฟอร์มขอเข้าพื้นที่ไปแล้ว รออนุมัติจากฝ่ายอาคาร',
-        },
-      ],
     },
     {
       kind: 'comment',
@@ -212,7 +215,7 @@ export const orgTasks = [
     status: 'done',
     owner: staff.owner,
     customer: customer.name,
-    updated: '28 Sep',
+    updated: '10 Sep',
   },
   {
     id: '#1007',
@@ -220,7 +223,7 @@ export const orgTasks = [
     status: 'done',
     owner: staff.nicha,
     customer: 'Anan Kittisak',
-    updated: '14 Sep',
+    updated: '23 Aug',
   },
   {
     id: '#0994',
@@ -228,7 +231,7 @@ export const orgTasks = [
     status: 'cancelled',
     owner: staff.kenji,
     customer: customer.name,
-    updated: '2 Sep',
+    updated: '3 Aug',
   },
 ];
 
@@ -239,35 +242,138 @@ export const orgStats = [
   { label: 'Done this year', value: 14, tone: 'green' },
 ];
 
-const point = (day, hour, weight, tone, taskIndex, when, summary) => ({
-  day,
-  hour,
-  weight,
-  tone,
-  when,
-  summary,
-  title: `${orgTasks[taskIndex].id} ${orgTasks[taskIndex].title}`,
-  status: orgTasks[taskIndex].status,
-  people: [orgTasks[taskIndex].owner, orgTasks[taskIndex].customer],
-});
+// --- Activity: the Timeline of every Task, condensed to its events ------------------
+// Tones: primary = Task opened, amber = Resolved, green = Done, none = comment or other event.
+export const activityRange = { from: '2026-05-01', to: '2026-10-31' };
+export const activityLegend = [
+  { tone: 'primary', label: 'Task opened' },
+  { tone: '', label: 'Comment or event' },
+  { tone: 'amber', label: 'Resolved' },
+  { tone: 'green', label: 'Done' },
+];
 
-// 90 days, oldest on the left. Tones: primary = Task opened, amber = Resolved, green = Done.
-export const activity = [
-  point(4, 10, 1, '', 5, '22 Jul, 10:05', 'Customer asked to bring the renewal forward.'),
-  point(9, 15, 2, 'primary', 5, '27 Jul, 15:20', 'Task opened for the certificate renewal.'),
-  point(16, 9, 0, '', 5, '3 Aug, 09:02', 'Cancelled by the Customer: handled by their IT team.'),
-  point(27, 21, 3, 'primary', 4, '14 Aug, 21:10', 'Worklist printer reported offline during night shift.'),
-  point(31, 8, 1, '', 4, '18 Aug, 08:15', 'Replacement driver installed, awaiting test print.'),
-  point(36, 13, 1, 'green', 4, '23 Aug, 13:30', 'Customer confirmed the printer is back.'),
-  point(44, 11, 2, 'primary', 3, '31 Aug, 11:00', 'Quarterly storage health check started.'),
-  point(49, 17, 0, '', 3, '5 Sep, 17:40', 'Report attached: 71% of capacity in use.'),
-  point(54, 10, 1, 'green', 3, '10 Sep, 10:25', 'Closed after the Customer read the report.'),
-  point(61, 7, 1, 'primary', 2, '17 Sep, 07:50', 'Two new radiologist accounts requested.'),
-  point(67, 22, 3, 'primary', 1, '23 Sep, 22:05', 'Fax images arriving solid black, screenshot attached.'),
-  point(70, 9, 2, '', 1, '26 Sep, 09:30', 'Reproduced: the TIFF compression setting was changed.'),
-  point(74, 14, 1, 'amber', 1, '30 Sep, 14:10', 'Fix deployed, closure proposed to the Customer.'),
-  point(78, 9, 2, 'primary', 0, '4 Oct, 09:14', 'PACS upgrade planned for Saturday night.'),
-  point(80, 11, 1, '', 0, '6 Oct, 11:02', 'Customer agreed to the downtime window.'),
-  point(83, 16, 2, '', 0, '9 Oct, 16:30', 'Site access confirmed with building security.'),
-  point(86, 8, 0, '', 0, '12 Oct, 08:10', 'Radiology notified; one workstation stays online.'),
+// One Customer's events on one Task: [date, tone, summary, weight?]
+const events = (title, status, owner, who, list) =>
+  list.map(([date, tone, summary, weight = 1]) => ({
+    date,
+    tone,
+    summary,
+    weight,
+    title,
+    status,
+    people: [owner, who],
+  }));
+
+const ploy = customer.name;
+const anan = 'Anan Kittisak';
+
+export const lannaActivity = {
+  name: 'Lanna Medical Group',
+  rows: [
+    {
+      name: ploy,
+      points: [
+        ...events('#0951 New reading workstation', 'done', staff.kenji, ploy, [
+          ['2026-05-12', 'primary', 'Task opened for a new reading workstation.'],
+          ['2026-05-15', '', 'Workstation imaged and delivered.'],
+          ['2026-05-20', 'green', 'Customer confirmed it is in use.'],
+        ]),
+        ...events('#0994 VPN certificate renewal', 'cancelled', staff.kenji, ploy, [
+          ['2026-07-27', 'primary', 'Task opened for the certificate renewal.'],
+          ['2026-08-03', '', 'Cancelled by the Customer: handled by their IT team.'],
+        ]),
+        ...events('#1019 Quarterly storage health check', 'done', staff.owner, ploy, [
+          ['2026-08-31', 'primary', 'Quarterly storage health check started.', 2],
+          ['2026-09-05', '', 'Report attached: 71% of capacity in use.'],
+          ['2026-09-08', 'amber', 'Closure proposed to the Customer.'],
+          ['2026-09-10', 'green', 'Customer confirmed after reading the report.'],
+        ]),
+        ...events('#1031 Add two radiologist accounts', 'open', staff.kenji, ploy, [
+          ['2026-09-17', 'primary', 'Two new radiologist accounts requested.'],
+        ]),
+        ...events('#1042 PACS server upgrade — Radiology', 'in_progress', staff.owner, ploy, [
+          ['2026-10-12', 'primary', 'Task opened, plan attached, Customer agreed to the downtime.', 3],
+          ['2026-10-13', '', 'Collaborators added.'],
+          ['2026-10-14', '', 'Site access confirmed with building security.', 2],
+          ['2026-10-15', '', 'Radiology notified; one workstation stays online.'],
+        ]),
+      ],
+    },
+    {
+      name: anan,
+      points: [
+        ...events('#0970 Report template change', 'done', staff.nicha, anan, [
+          ['2026-06-18', 'primary', 'New report template requested.'],
+          ['2026-06-24', 'green', 'Customer confirmed the template.'],
+        ]),
+        ...events('#1007 Worklist printer offline', 'done', staff.nicha, anan, [
+          ['2026-08-14', 'primary', 'Worklist printer reported offline during night shift.', 2],
+          ['2026-08-18', '', 'Replacement driver installed, awaiting a test print.'],
+          ['2026-08-21', 'amber', 'Closure proposed to the Customer.'],
+          ['2026-08-23', 'green', 'Customer confirmed the printer is back.'],
+        ]),
+        ...events('#1038 Fax images arrive solid black, no preview', 'resolved', staff.nicha, anan, [
+          ['2026-09-23', 'primary', 'Fax images arriving solid black, screenshot attached.', 3],
+          ['2026-09-26', '', 'Reproduced: the TIFF compression setting was changed.', 2],
+          ['2026-10-14', 'amber', 'Fix deployed, closure proposed to the Customer.'],
+        ]),
+      ],
+    },
+  ],
+};
+
+export const allActivity = [
+  lannaActivity,
+  {
+    name: 'Andaman Hospital',
+    rows: [
+      {
+        name: 'Malee Charoen',
+        points: [
+          ...events('#0962 HL7 feed setup', 'done', staff.owner, 'Malee Charoen', [
+            ['2026-06-03', 'primary', 'HL7 feed to the new HIS requested.', 2],
+            ['2026-06-10', '', 'Test messages accepted by the HIS.'],
+            ['2026-06-17', 'green', 'Customer confirmed the feed is live.'],
+          ]),
+          ...events('#1040 HL7 interface drops orders', 'in_progress', staff.owner, 'Malee Charoen', [
+            ['2026-10-01', 'primary', 'Orders missing from the worklist since the HIS update.', 2],
+            ['2026-10-06', '', 'Logs requested from the HIS vendor.'],
+            ['2026-10-13', '', 'Mapping fix under test.', 2],
+          ]),
+        ],
+      },
+      {
+        name: 'Prasit Noi',
+        points: [
+          ...events('#1001 Modality AE title change', 'done', staff.kenji, 'Prasit Noi', [
+            ['2026-08-05', 'primary', 'AE title change for the replaced CT.'],
+            ['2026-08-07', 'green', 'Customer confirmed images arrive.'],
+          ]),
+          ...events('#1034 Technologist cannot sign in', 'done', staff.nicha, 'Prasit Noi', [
+            ['2026-09-28', 'primary', 'Account locked after a password change.'],
+            ['2026-09-29', 'green', 'Customer confirmed access is restored.'],
+          ]),
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Chao Phraya Clinic',
+    rows: [
+      {
+        name: 'Kanya Rattana',
+        points: [
+          ...events('#0983 Viewer shortcut training', 'done', staff.nicha, 'Kanya Rattana', [
+            ['2026-07-08', 'primary', 'Training session requested for new staff.'],
+            ['2026-07-15', 'green', 'Session held, Customer confirmed.'],
+          ]),
+          ...events('#1039 New modality worklist', 'in_progress', staff.kenji, 'Kanya Rattana', [
+            ['2026-10-08', 'primary', 'Worklist needed for the new ultrasound.'],
+            ['2026-10-10', '', 'Connection details received.'],
+            ['2026-10-14', '', 'Worklist configured, awaiting a test study.'],
+          ]),
+        ],
+      },
+    ],
+  },
 ];

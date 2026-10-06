@@ -1,5 +1,6 @@
 <script>
   // PROTOTYPE: the Staff landing page, summarising work per Organization. Mock data only.
+  import ActivityScatter from '../lib/ActivityScatter.svelte';
   import Button from '../lib/Button.svelte';
   import Field from '../lib/Field.svelte';
   import Icon from '../lib/Icon.svelte';
@@ -7,16 +8,17 @@
   import SlideOver from '../lib/SlideOver.svelte';
   import Tabs from '../lib/Tabs.svelte';
   import TopBar from '../lib/TopBar.svelte';
-  import { organizations, statusCounts } from '../lib/mock.js';
+  import { activityLegend, activityRange, allActivity, organizations, statusCounts } from '../lib/mock.js';
 
-  let { newTask = false } = $props();
+  let { newTask = false, initialView = 'organizations' } = $props();
 
   let panel = $state(newTask);
   let status = $state('all');
-  let view = $state('organizations');
+  let view = $state(initialView);
   let layout = $state('grid');
   const views = [
     { id: 'organizations', label: 'By Organization' },
+    { id: 'activity', label: 'Activity' },
     { id: 'all', label: 'All Tasks' },
     { id: 'mine', label: 'My Tasks', count: 5 },
   ];
@@ -37,6 +39,15 @@
   <div class="views"><Tabs variant="underline" items={views} bind:active={view} /></div>
 
   <main>
+    {#if view === 'activity'}
+      <ActivityScatter
+        title="Activity by Organization"
+        groups={allActivity}
+        legend={activityLegend}
+        expanded={['Lanna Medical Group']}
+        {...activityRange}
+      />
+    {:else}
     <section class="panel">
       <header>
         <h1>Organizations</h1>
@@ -59,6 +70,7 @@
         {/each}
       </div>
     </section>
+    {/if}
   </main>
 
   <SlideOver

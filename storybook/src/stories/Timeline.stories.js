@@ -9,7 +9,11 @@ export default {
   argTypes: { viewer: { control: 'inline-radio', options: ['staff', 'customer'] } },
 };
 
-export const StaffView = { name: 'Staff view (with Threads)' };
-export const CustomerView = { name: 'Customer view (no Threads)', args: { viewer: 'customer' } };
+export const StaffCanWrite = {
+  name: 'Staff on the Task (hover an entry to start a Thread)',
+  args: { actions: true },
+};
+export const StaffReadOnly = { name: 'Staff, read-only' };
+export const CustomerView = { name: 'Customer (no Threads)', args: { viewer: 'customer' } };
 export const Cards = { name: 'Comments as cards', args: { cards: true, viewer: 'customer' } };
 export const ActivityLog = { render: (args) => ({ Component: ActivityLogDemo, props: { viewer: args.viewer } }) };

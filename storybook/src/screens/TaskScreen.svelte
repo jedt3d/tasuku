@@ -6,7 +6,6 @@
   import Composer from '../lib/Composer.svelte';
   import Field from '../lib/Field.svelte';
   import Icon from '../lib/Icon.svelte';
-  import QuickAction from '../lib/QuickAction.svelte';
   import Tabs from '../lib/Tabs.svelte';
   import Timeline from '../lib/Timeline.svelte';
   import TopBar from '../lib/TopBar.svelte';
@@ -22,14 +21,20 @@
     { id: 'events', label: 'Events' },
     { id: 'threads', label: 'Threads', count: 2 },
   ];
-  const kinds = { comments: ['comment'], events: ['event', 'deleted'], threads: ['thread'] };
+  const matches = {
+    comments: (e) => e.kind === 'comment',
+    events: (e) => e.kind === 'event' || e.kind === 'deleted',
+    threads: (e) => e.threads?.length,
+  };
 
   const canWrite = $derived(role !== 'reader');
   const canClose = $derived(role === 'owner' || role === 'taskmaster');
   const isMaster = $derived(role === 'taskmaster');
   const all = $derived(status === 'resolved' ? [...task.timeline, resolvedEvent] : task.timeline);
-  const entries = $derived(filter === 'all' ? all : all.filter((e) => kinds[filter].includes(e.kind)));
-  const viewer = $derived({ owner: staff.owner, collaborator: staff.nicha, reader: 'Arthit Boonmee', taskmaster: staff.master }[role]);
+  const entries = $derived(filter === 'all' ? all : all.filter(matches[filter]));
+  const viewer = $derived(
+    { owner: staff.owner, collaborator: staff.nicha, reader: 'Arthit Boonmee', taskmaster: staff.master }[role],
+  );
 </script>
 
 <div class="app">
@@ -52,6 +57,8 @@
       </div>
       <div class="meta"><span class="k">Due</span><span>{task.due}</span></div>
       <div class="meta"><Badge {status} /><span>Task {task.id}</span></div>
+
+      <!-- One slot, by what the viewer may do: close the Task, or be told they cannot. -->
       <div class="actions">
         {#if !canWrite}
           <Badge tone="slate" label="Read-only · you are not on this Task" dot={false} />
@@ -62,8 +69,9 @@
           {:else}
             <Badge tone="amber" label="Waiting for the Customer" />
           {/if}
-        {:else}
-          <Button variant="primary" icon="checkCircle" label="Mark Resolved" disabled={!canClose} />
+        {:else if canClose}
+          <Button variant="danger" icon="ban" label="Cancel Task" />
+          <Button variant="primary" icon="checkCircle" label="Mark Resolved" />
         {/if}
       </div>
     </header>
@@ -81,21 +89,26 @@
     <div class="cols">
       <aside class="people">
         <section>
-          <h3>Owner</h3>
-          <div class="person">
-            <Avatar name={staff.owner} size={32} />
-            <span>{staff.owner}</span>
-            {#if isMaster}<button class="link">Reassign</button>{/if}
-          </div>
+          <h3>
+            Owner
+            {#if isMaster}<button class="act" aria-label="Reassign Owner"><Icon name="swap" size={14} />Reassign</button>{/if}
+          </h3>
+          <div class="person"><Avatar name={staff.owner} size={32} /><span>{staff.owner}</span></div>
         </section>
         <section>
-          <h3>Collaborators {#if canClose}<button class="link">+ Add</button>{/if}</h3>
+          <h3>
+            Collaborators
+            {#if canClose}<button class="act" aria-label="Add Collaborator"><Icon name="plus" size={14} />Add</button>{/if}
+          </h3>
           {#each task.collaborators as name (name)}
             <div class="person"><Avatar {name} size={32} /><span>{name}</span></div>
           {/each}
         </section>
         <section>
-          <h3>Customer {#if canWrite}<button class="link">Change</button>{/if}</h3>
+          <h3>
+            Customer
+            {#if canWrite}<button class="act" aria-label="Change Customer"><Icon name="edit" size={14} />Change</button>{/if}
+          </h3>
           <div class="person">
             <Avatar name={customer.name} size={32} />
             <span>{customer.name}<small>{customer.email}</small></span>
@@ -104,7 +117,10 @@
         <Field label="Organization" type="select" options={[task.organization]} icon="building" />
         <Field label="Due date" value={task.due} icon="calendar" />
         <section>
-          <h3>Refers to</h3>
+          <h3>
+            Related
+            {#if canWrite}<button class="act" aria-label="New Task that refers to this one"><Icon name="plus" size={14} />New Task</button>{/if}
+          </h3>
           <a class="ref" href="#ref"><Icon name="link" size={15} />{task.refersTo}</a>
         </section>
       </aside>
@@ -119,51 +135,15 @@
           <Tabs items={filters} bind:active={filter} />
         </div>
         <div class="scroll">
-          <Timeline {entries} />
+          <Timeline {entries} actions={canWrite} />
         </div>
         <div class="dock">
           <Composer
             disabled={!canWrite}
             disabledReason="Only the Owner and Collaborators can comment on this Task."
-            targets={[
-              { id: 'timeline', label: 'Timeline · Customer sees this' },
-              { id: 'thread', label: 'Thread · Staff only' },
-            ]}
           />
         </div>
       </main>
-
-      <aside class="quick">
-        <h2>Quick actions</h2>
-        <section>
-          <h3>People</h3>
-          <div class="tiles">
-            <QuickAction icon="userPlus" label="Add Collaborator" disabled={!canClose} />
-            <QuickAction icon="mail" label="Change Customer" disabled={!canWrite} />
-            <QuickAction icon="swap" label="Reassign Owner" disabled={!isMaster} />
-          </div>
-        </section>
-        <section>
-          <h3>Timeline</h3>
-          <div class="tiles">
-            <QuickAction icon="paperclip" label="Attach file" disabled={!canWrite} />
-            <QuickAction icon="thread" label="New Thread" disabled={!canWrite} />
-          </div>
-        </section>
-        <section>
-          <h3>Status</h3>
-          <div class="tiles">
-            <QuickAction icon="checkCircle" label="Mark Resolved" disabled={!canClose || status === 'resolved'} />
-            <QuickAction icon="ban" label="Cancel Task" tone="danger" disabled={!canClose || status === 'resolved'} />
-          </div>
-        </section>
-        <section>
-          <h3>Related</h3>
-          <div class="tiles">
-            <QuickAction icon="link" label="New Task from this" />
-          </div>
-        </section>
-      </aside>
     </div>
   </div>
 </div>
@@ -263,6 +243,7 @@
   }
   .actions {
     display: flex;
+    align-items: center;
     gap: var(--s-2);
     margin-left: auto;
   }
@@ -279,39 +260,43 @@
   .cols {
     flex: 1;
     display: grid;
-    grid-template-columns: 264px minmax(0, 1fr) 300px;
+    grid-template-columns: 280px minmax(0, 1fr);
     min-height: 0;
   }
-  .people,
-  .quick {
+  .people {
     display: flex;
     flex-direction: column;
     gap: var(--s-5);
     padding: var(--s-5);
-    overflow-y: auto;
-  }
-  .people {
     border-right: 1px solid var(--c-border);
-  }
-  .quick {
-    border-left: 1px solid var(--c-border);
+    overflow-y: auto;
   }
   h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0 0 8px;
+    min-height: 26px;
+    margin: 0 0 6px;
     font-size: var(--fs-sm);
     font-weight: 600;
   }
-  .link {
-    padding: 0;
+  /* The action for a section sits on the same line as its title, at the far right. */
+  .act {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 8px;
     border: 0;
-    background: none;
+    border-radius: 7px;
+    background: var(--c-primary-soft);
     color: var(--c-primary-hover);
-    font-size: var(--fs-sm);
-    font-weight: 500;
+    font-size: var(--fs-xs);
+    font-weight: 600;
     cursor: pointer;
+  }
+  .act:hover {
+    box-shadow: inset 0 0 0 1px var(--c-primary-border);
   }
   .person {
     display: flex;
@@ -389,24 +374,6 @@
     padding: var(--s-3) var(--s-5) var(--s-5);
   }
 
-  .quick section + section {
-    padding-top: var(--s-5);
-    border-top: 1px solid var(--c-border);
-  }
-  .tiles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 8px;
-  }
-
-  @media (max-width: 1180px) {
-    .cols {
-      grid-template-columns: 240px minmax(0, 1fr);
-    }
-    .quick {
-      display: none;
-    }
-  }
   @media (max-width: 800px) {
     .app {
       height: auto;

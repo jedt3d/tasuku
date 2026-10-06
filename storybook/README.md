@@ -20,7 +20,8 @@ npm run build-storybook  # static site in storybook-static/
 - `src/lib/`: components. Plain Svelte 5 and scoped CSS; no UI framework, no icon library.
 - `src/screens/`: **prototype** screens assembled from the components. Mock data, nothing is saved.
   They show what the screens should look like; the real app rewrites them rather than importing them.
-- `src/stories/`: one stories file per component, plus `Screens`.
+- `src/stories/`: one stories file per component, plus the prototype screens.
+- `src/assets/logo.svg`: the logo shown in the top bar. Replace the file to change it.
 
 Every person and Organization in `src/lib/mock.js` is fictional. This repository is public: never
 put real Customer data here.

@@ -4,6 +4,6 @@ import '../src/tokens.css';
 export default {
   parameters: {
     layout: 'padded',
-    options: { storySort: { order: ['Foundations', 'Components', 'Screens'] } },
+    options: { storySort: { order: ['Foundations', 'Components', 'Prototypes'] } },
   },
 };
