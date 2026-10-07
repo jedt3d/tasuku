@@ -106,14 +106,16 @@ erDiagram
     datetime removed_at
   }
   CUSTOMER {
-    uuid id PK
+    uuid user_id PK
     string email UK
     string language
-    uuid organization_id FK
+    bigint organization_id FK
+    datetime created_at
   }
   ORGANIZATION {
-    uuid id PK
-    string name
+    bigint id PK
+    string name UK
+    datetime created_at
   }
   TASK {
     bigint id PK
@@ -123,7 +125,7 @@ erDiagram
     date due_date
     uuid owner_id FK
     uuid customer_id FK
-    uuid organization_id FK
+    bigint organization_id FK
     bigint refers_to_id FK
     datetime created_at
   }
@@ -138,6 +140,7 @@ erDiagram
     string kind
     uuid author_id FK
     uuid subject_id FK
+    uuid customer_id FK
     string body
     string status
     datetime created_at
@@ -161,6 +164,7 @@ erDiagram
   TASK ||--o{ TIMELINE_ENTRY : records
   STAFF |o--o{ TIMELINE_ENTRY : writes
   STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
+  CUSTOMER |o--o{ TIMELINE_ENTRY : "writes or is the subject of"
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
 </script>
 </main>

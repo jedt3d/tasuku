@@ -110,8 +110,9 @@ sequenceDiagram
   opt First time a Customer is added to a Task
     Staff->>App: add Customer email to a Task
     App->>Fn: add this Customer
-    Fn->>Auth: create the account if the email is new
-    Fn->>DB: create the Customer, add to the Task
+    Fn->>DB: add to the Task, as the caller
+    DB-->>Fn: refused, done, or no account yet
+    Fn->>Auth: create the account if there is none, then add again
     DB->>Mail: added to a Task, link to the Task
     Mail-->>P: email with the Task link
   end
