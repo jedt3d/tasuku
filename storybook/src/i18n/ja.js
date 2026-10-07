@@ -203,4 +203,6 @@ export default {
   'event.deletedAttachment': '添付ファイルを削除しました',
   'attach.tooLarge': '{name} は 10 MB を超えています。より小さいファイルを添付してください。',
   'attach.wrongType': '{name} は画像でも PDF でもありません。他の種類のファイルは添付できません。',
+  'attach.unerased': '削除済みのファイル {n} 件が Storage に残っています（消去が完了しませんでした）。誰も開けません。タスク:',
+  'attach.eraseNow': '今すぐ消去',
 };

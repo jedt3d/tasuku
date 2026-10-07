@@ -233,3 +233,24 @@ test('deleting a comment deletes its files', async () => {
   assert.equal((await kinds(owner, task)).includes('attachment_deleted'), false);
   assert.equal((await bucket(master).remove(deleted.data)).data.length, 2);
 });
+
+test('a Task Master reads which deleted files are not erased yet, and erases them', async () => {
+  const owner = await staffMember();
+  const master = await taskMaster();
+  const task = await openTask(owner);
+  await attach(owner, task);
+  const [file] = await attachments(owner, task);
+  const waiting = async () =>
+    (await master.rpc('unerased_attachments')).data.filter((row) => row.task_id === task.id).map((row) => row.path);
+
+  assert.deepEqual(await waiting(), []);
+  // The Owner deletes the file and the erasing never happens.
+  await owner.rpc('delete_attachment', { attachment_id: file.id });
+
+  assert.deepEqual(await waiting(), [file.path]);
+  assert.equal((await owner.rpc('unerased_attachments')).error?.code, '42501');
+  assert.equal(await fetchFile(await staffMember(), file.path), null);
+
+  assert.equal((await bucket(master).remove([file.path])).data.length, 1);
+  assert.deepEqual(await waiting(), []);
+});

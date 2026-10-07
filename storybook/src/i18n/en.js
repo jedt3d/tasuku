@@ -201,4 +201,6 @@ export default {
   'event.deletedAttachment': 'deleted an attachment',
   'attach.tooLarge': '{name} is over 10 MB. Attach a smaller file.',
   'attach.wrongType': '{name} is not an image or a PDF. Other file types cannot be attached.',
+  'attach.unerased': 'Deleted files still in Storage: {n}. Erasing them did not finish. Nobody can open them. Tasks:',
+  'attach.eraseNow': 'Erase now',
 };

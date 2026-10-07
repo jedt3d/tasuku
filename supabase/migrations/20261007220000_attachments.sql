@@ -221,13 +221,34 @@ create function public.delete_comment(entry_id bigint) returns text[]
   end;
   $$;
 
+-- The report for a Task Master: files that were deleted but whose object is still in the bucket,
+-- because the erasing through Storage did not finish. Nobody reads them; a Task Master erases them.
+create function public.unerased_attachments()
+  returns table (id bigint, task_id bigint, path text, deleted_at timestamptz)
+  language plpgsql stable security definer set search_path = ''
+  as $$
+  begin
+    if not private.is_task_master() then
+      raise exception 'only a Task Master reads this report' using errcode = '42501';
+    end if;
+    return query
+      select a.id, a.task_id, a.path, a.deleted_at
+      from public.attachments a
+      where a.deleted_at is not null
+        and exists (
+          select from storage.objects o where o.bucket_id = 'attachments' and o.name = a.path
+        )
+      order by a.deleted_at;
+  end;
+  $$;
+
 revoke execute on function
   private.uploads_to_task(text), private.reads_attachment(text), private.erases_attachment(text),
   public.comment_with_files(bigint, text, jsonb), public.delete_attachment(bigint),
-  public.delete_comment(bigint)
+  public.delete_comment(bigint), public.unerased_attachments()
   from public, anon, authenticated;
 grant execute on function
   private.uploads_to_task(text), private.reads_attachment(text), private.erases_attachment(text),
   public.comment_with_files(bigint, text, jsonb), public.delete_attachment(bigint),
-  public.delete_comment(bigint)
+  public.delete_comment(bigint), public.unerased_attachments()
   to authenticated;

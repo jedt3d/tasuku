@@ -203,4 +203,6 @@ export default {
   'event.deletedAttachment': 'ลบไฟล์แนบหนึ่งรายการ',
   'attach.tooLarge': '{name} ใหญ่เกิน 10 MB โปรดแนบไฟล์ที่เล็กกว่านี้',
   'attach.wrongType': '{name} ไม่ใช่รูปหรือ PDF แนบไฟล์ชนิดอื่นไม่ได้',
+  'attach.unerased': 'ไฟล์ที่ถูกลบ {n} รายการยังค้างอยู่ใน Storage เพราะการลบไม่เสร็จ ไม่มีใครเปิดไฟล์เหล่านี้ได้ Task:',
+  'attach.eraseNow': 'ลบออกเดี๋ยวนี้',
 };
