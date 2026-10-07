@@ -82,6 +82,7 @@ erDiagram
     string email UK
     boolean is_task_master
     string language
+    datetime removed_at
   }
   CUSTOMER {
     uuid id PK
