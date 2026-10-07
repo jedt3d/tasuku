@@ -106,7 +106,7 @@ erDiagram
     uuid owner_id FK
     uuid customer_id FK
     bigint organization_id FK
-    bigint refers_to_id FK
+    bigint earlier_task_id FK
     datetime created_at
   }
   COLLABORATOR {
@@ -152,11 +152,11 @@ erDiagram
 
 - Request is not drawn: spec #1 has no Request record (see the Request question in 02, 03 and 06).
 - Thread is not drawn: the Storybook README says it is planned for a later release.
-- TIMELINE_ENTRY (#5) is built. Its kind is `comment`, `opened`, `moved`, `collaborator_added` or `collaborator_removed` (#6), `customer_added` or `customer_removed` (#7); later issues add kinds. `subject_id` is set only on the two Collaborator kinds and names the Staff member added or removed; `author_id` is who did it. A comment deleted by a Task Master is the same entry with its `body` emptied and `deleted_at` set, not a separate kind. `status` is set only on `moved`. `author_id` is empty when Tasuku itself made the entry.
-- `author_id` names a Staff member only. `customer_id` (#7) names the Customer an entry is by or about: the author of a comment a Customer wrote, and the Customer a `customer_added` or `customer_removed` entry concerns (`author_id` is then the Staff member who did it). A comment has exactly one of the two.
-- A Staff member's email can be the Customer of a Task (decided by the user in #7); what they write there is stored with `author_id`, as Staff.
+- TIMELINE_ENTRY (#5) is built. Its kind is `comment`, `opened`, `moved`, `collaborator_added` or `collaborator_removed` (#6), `customer_added` or `customer_removed` (#7); later issues add kinds. `subject_id` is set only on the two Collaborator kinds and names the Staff member added or removed; `author_id` is who did it. A comment deleted by a Task Master is the same entry with its `body` emptied and `deleted_at` set, not a separate kind. `status` is set only on `moved`. `author_id` and `customer_id` are both empty when Tasuku itself made the entry.
+- `author_id` names a Staff member only. `customer_id` (#7) names the Customer an entry is by or about: the author of a comment a Customer wrote, and the Customer a `customer_added` or `customer_removed` entry concerns (`author_id` is then the Staff member who did it). A comment has exactly one of the two. A `moved` entry (#8) names who moved the Task in the same way: a Staff member in `author_id`, a Customer in `customer_id`, neither when Tasuku did it.
+- A Staff member's email can be the Customer of a Task (decided by the user in #7); what they write there is stored with `author_id`, as Staff, and so is a status change they make as the Customer (#8).
 - Closure period (48 h) and reminder lead time (24 h) are stored settings, left out as they do not relate to a Task.
 - A Task Master is a flag on STAFF, not a separate entity (spec #1, Identity and roles).
-- STAFF (#2, #3), TASK (#4), TIMELINE_ENTRY (#5), COLLABORATOR (#6, table `task_collaborators`, keyed by `task_id` and `staff_id`), ORGANIZATION and CUSTOMER (#7) are built (`supabase/migrations/`). The key of STAFF is the Auth account id, `user_id`; the key of TASK is a running number, so every `task_id` is drawn as `bigint`. The key of TIMELINE_ENTRY is a running number too, so ATTACHMENT.entry_id is drawn as `bigint`. The key of CUSTOMER is the Auth account id, `user_id`, like STAFF; the key of ORGANIZATION is a running number, and its name is unique whatever its capitals. TASK has no `refers_to_id` yet. ATTACHMENT is still drawn from the spec, and its key and column names may change when it is built.
+- STAFF (#2, #3), TASK (#4), TIMELINE_ENTRY (#5), COLLABORATOR (#6, table `task_collaborators`, keyed by `task_id` and `staff_id`), ORGANIZATION and CUSTOMER (#7) are built (`supabase/migrations/`). The key of STAFF is the Auth account id, `user_id`; the key of TASK is a running number, so every `task_id` is drawn as `bigint`. The key of TIMELINE_ENTRY is a running number too, so ATTACHMENT.entry_id is drawn as `bigint`. The key of CUSTOMER is the Auth account id, `user_id`, like STAFF; the key of ORGANIZATION is a running number, and its name is unique whatever its capitals. The reference of a TASK to an earlier one is `earlier_task_id` (#8): it must be lower than the Task's own number, and it is a detail whoever writes on the Task may change. ATTACHMENT is still drawn from the spec, and its key and column names may change when it is built.
 - A Task's details change only while it is not Done or Cancelled (#4, from story 70). Spec #1 does not say this about details outright.
 - The Owner of a Task is never also its COLLABORATOR, but this is checked only when a Collaborator is added (#6). Reassigning the Owner (#12) must keep it true.
