@@ -13,7 +13,7 @@
   const columns = 'id, title, description, due_date, status, owner_id, owner:staff!owner_id(name, email)';
 
   const entryColumns =
-    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email)';
+    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email)';
   // The database counts the same 15 minutes and has the last word (ADR 0002).
   const EDIT_WINDOW = 15 * 60 * 1000;
 
@@ -39,9 +39,14 @@
   const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !collaboratorIds.includes(s.user_id)));
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
-  // The entries as the Timeline component draws them.
-  const shown = $derived(
-    entries.map((entry) => {
+  // The entries as the Timeline component draws them. A comment is labelled by what its author was
+  // on the Task when they wrote it: the Timeline is a record, so removing a Collaborator later does
+  // not take the label off what they said. The events before the comment say who was on the Task.
+  const shown = $derived.by(() => {
+    const collaborating = new Set();
+    return entries.map((entry) => {
+      if (entry.kind === 'collaborator_added') collaborating.add(entry.subject_id);
+      if (entry.kind === 'collaborator_removed') collaborating.delete(entry.subject_id);
       const actor = entry.author ? displayName(entry.author) : 'Tasuku';
       if (entry.kind === 'opened') return { kind: 'event', icon: 'plus', actor, key: 'event.opened', at: entry.created_at };
       if (entry.kind === 'moved') return { kind: 'event', actor, key: 'event.movedTo', status: entry.status, at: entry.created_at };
@@ -55,15 +60,15 @@
         kind: 'comment',
         id: entry.id,
         author: actor,
-        role: entry.author_id === task?.owner_id ? 'owner' : collaboratorIds.includes(entry.author_id) ? 'collaborator' : undefined,
+        role: entry.author_id === task?.owner_id ? 'owner' : collaborating.has(entry.author_id) ? 'collaborator' : undefined,
         at: entry.created_at,
         text: entry.body,
         edited: Boolean(entry.edited_at),
         canEdit: canWrite && entry.author_id === auth.userId && now - Date.parse(entry.created_at) < EDIT_WINDOW,
         canDelete: isTaskMaster,
       };
-    }),
-  );
+    });
+  });
 
   // Nothing in `load` or `refresh` may read, before its first `await`, a state it writes: the effect
   // below would run it again.

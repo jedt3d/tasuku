@@ -72,6 +72,23 @@ test('the Owner removes a Collaborator, who can then no longer write on the Task
   assert.deepEqual((await collaborator.from('tasks').update({ title: 'Mine' }).eq('id', task.id).select()).data, []);
 });
 
+test('a Collaborator who was removed can be added again, by the Owner or a Task Master', async () => {
+  const owner = await staffMember();
+  const collaborator = await staffMember();
+  const task = await openTask(owner);
+
+  for (const client of [owner, await taskMaster()]) {
+    await addCollaborator(owner, task, collaborator);
+    await removeCollaborator(owner, task, collaborator);
+
+    const again = await addCollaborator(client, task, collaborator);
+
+    assert.equal(again.error, null);
+    assert.equal((await comment(collaborator, task)).error, null);
+    await removeCollaborator(owner, task, collaborator);
+  }
+});
+
 test('a Task Master adds and removes a Collaborator on any Task', async () => {
   const task = await openTask(await staffMember());
   const collaborator = await staffMember();
