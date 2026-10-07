@@ -173,4 +173,10 @@ export default {
   'task.notFound': 'This Task does not exist.',
   'staff.name': 'Your name',
   'staff.nameHint': 'Shown on your Tasks in place of your email.',
+  'composer.closed': 'This Task is Done or Cancelled. It takes no more comments.',
+  'timeline.edit': 'Edit',
+  'timeline.delete': 'Delete',
+  'timeline.confirmDelete': 'Delete this comment? Its text is erased for everyone and cannot be restored.',
+  'timeline.editing': 'Editing your comment',
+  'timeline.editClosed': 'This comment can no longer be edited. A comment can be edited for 15 minutes after it is posted.',
 };

@@ -175,4 +175,10 @@ export default {
   'task.notFound': 'ไม่พบ Task นี้',
   'staff.name': 'ชื่อของคุณ',
   'staff.nameHint': 'แสดงใน Task ของคุณแทนอีเมล',
+  'composer.closed': 'Task นี้ Done หรือ Cancelled แล้ว จึง comment เพิ่มไม่ได้',
+  'timeline.edit': 'แก้ไข',
+  'timeline.delete': 'ลบ',
+  'timeline.confirmDelete': 'ลบ comment นี้หรือไม่ ข้อความจะถูกลบสำหรับทุกคนและกู้คืนไม่ได้',
+  'timeline.editing': 'กำลังแก้ไข comment ของคุณ',
+  'timeline.editClosed': 'แก้ไข comment นี้ไม่ได้แล้ว comment แก้ไขได้ภายใน 15 นาทีหลังส่ง',
 };

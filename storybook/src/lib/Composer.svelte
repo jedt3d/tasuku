@@ -9,6 +9,8 @@
     value = $bindable(''),
     disabled = false,
     disabledReason = '',
+    attach = true, // false where files cannot be attached
+    sendLabel,
     onsend,
   } = $props();
 </script>
@@ -19,11 +21,13 @@
   {:else}
     <textarea rows="2" placeholder={placeholder ?? t('composer.placeholder')} bind:value></textarea>
     <div class="bar">
-      <button class="attach" aria-label={t('composer.attach')}><Icon name="paperclip" /></button>
-      <span class="warn"
-        ><Icon name="warning" size={14} /> {t('composer.warning')}</span
-      >
-      <Button variant="primary" size="sm" icon="send" label={t('common.send')} onclick={() => onsend?.(value)} />
+      {#if attach}
+        <button class="attach" aria-label={t('composer.attach')}><Icon name="paperclip" /></button>
+      {/if}
+      <span class="warn">
+        {#if attach}<Icon name="warning" size={14} /> {t('composer.warning')}{/if}
+      </span>
+      <Button variant="primary" size="sm" icon="send" label={sendLabel ?? t('common.send')} onclick={() => onsend?.(value)} />
     </div>
   {/if}
 </div>

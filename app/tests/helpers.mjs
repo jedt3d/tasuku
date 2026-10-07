@@ -8,7 +8,7 @@ export const env = localSupabase();
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 
 // The secret key bypasses Row Level Security: tests use it only to arrange, never to assert. It
-// arranges users, and a Task's status for as long as no function sets one (#5, #8).
+// arranges users, the age of a comment, and a Task's closing status until a function sets one (#8).
 export const admin = createClient(env.url, env.secretKey, options);
 export const anonymous = () => createClient(env.url, env.publishableKey, options);
 
@@ -40,3 +40,22 @@ export async function signInAs(email, { staff } = {}) {
   }
   return signIn(email);
 }
+
+export const staffMember = () => signInAs(uniqueEmail('staff'), { staff: {} });
+export const taskMaster = () => signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
+export const userId = async (client) => (await client.auth.getUser()).data.user.id;
+
+// Opens a Task as `client` and returns it as that person reads it back.
+export async function openTask(client, fields = {}) {
+  const { data, error } = await client
+    .from('tasks')
+    .insert({ title: 'Replace the UPS battery', description: 'Rack 2, server room.', ...fields })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Posts a comment on the Timeline of `task` as `client`. Resolves to the API's answer, error included.
+export const comment = (client, task, body = 'On it.') =>
+  client.from('timeline_entries').insert({ task_id: task.id, body }).select().single();
