@@ -110,12 +110,14 @@ erDiagram
   COLLABORATOR {
     bigint task_id FK
     uuid staff_id FK
+    datetime added_at
   }
   TIMELINE_ENTRY {
     bigint id PK
     bigint task_id FK
     string kind
     uuid author_id FK
+    uuid subject_id FK
     string body
     string status
     datetime created_at
@@ -138,6 +140,7 @@ erDiagram
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
   STAFF |o--o{ TIMELINE_ENTRY : writes
+  STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
 ```
 
@@ -145,9 +148,10 @@ erDiagram
 
 - Request is not drawn: spec #1 has no Request record (see the Request question in 02, 03 and 06).
 - Thread is not drawn: the Storybook README says it is planned for a later release.
-- TIMELINE_ENTRY (#5) is built. Its kind is `comment`, `opened` or `moved`; later issues add kinds. A comment deleted by a Task Master is the same entry with its `body` emptied and `deleted_at` set, not a separate kind. `status` is set only on `moved`. `author_id` is empty when Tasuku itself made the entry.
+- TIMELINE_ENTRY (#5) is built. Its kind is `comment`, `opened`, `moved`, `collaborator_added` or `collaborator_removed` (#6); later issues add kinds. `subject_id` is set only on the two Collaborator kinds and names the Staff member added or removed; `author_id` is who did it. A comment deleted by a Task Master is the same entry with its `body` emptied and `deleted_at` set, not a separate kind. `status` is set only on `moved`. `author_id` is empty when Tasuku itself made the entry.
 - `author_id` names a Staff member only. How a Customer is stored as an author is still open (#7).
 - Closure period (48 h) and reminder lead time (24 h) are stored settings, left out as they do not relate to a Task.
 - A Task Master is a flag on STAFF, not a separate entity (spec #1, Identity and roles).
-- STAFF (#2, #3), TASK (#4) and TIMELINE_ENTRY (#5) are built (`supabase/migrations/`). The key of STAFF is the Auth account id, `user_id`; the key of TASK is a running number, so every `task_id` is drawn as `bigint`. The key of TIMELINE_ENTRY is a running number too, so ATTACHMENT.entry_id is drawn as `bigint`. TASK has no `customer_id`, `organization_id` or `refers_to_id` yet. The other entities are still drawn from the spec, and their key and column names may change when they are built.
+- STAFF (#2, #3), TASK (#4), TIMELINE_ENTRY (#5) and COLLABORATOR (#6, table `task_collaborators`, keyed by `task_id` and `staff_id`) are built (`supabase/migrations/`). The key of STAFF is the Auth account id, `user_id`; the key of TASK is a running number, so every `task_id` is drawn as `bigint`. The key of TIMELINE_ENTRY is a running number too, so ATTACHMENT.entry_id is drawn as `bigint`. TASK has no `customer_id`, `organization_id` or `refers_to_id` yet. The other entities are still drawn from the spec, and their key and column names may change when they are built.
 - A Task's details change only while it is not Done or Cancelled (#4, from story 70). Spec #1 does not say this about details outright.
+- The Owner of a Task is never also its COLLABORATOR, but this is checked only when a Collaborator is added (#6). Reassigning the Owner (#12) must keep it true.

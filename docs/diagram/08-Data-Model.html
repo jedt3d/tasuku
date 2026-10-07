@@ -130,12 +130,14 @@ erDiagram
   COLLABORATOR {
     bigint task_id FK
     uuid staff_id FK
+    datetime added_at
   }
   TIMELINE_ENTRY {
     bigint id PK
     bigint task_id FK
     string kind
     uuid author_id FK
+    uuid subject_id FK
     string body
     string status
     datetime created_at
@@ -158,6 +160,7 @@ erDiagram
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
   STAFF |o--o{ TIMELINE_ENTRY : writes
+  STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
 </script>
 </main>
