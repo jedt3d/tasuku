@@ -270,9 +270,12 @@ max_frequency = "5s"
 # 4152127777 = "123456"
 
 # Configure logged in session timeouts.
-# [auth.sessions]
+# Tasuku: everyone signs in again 7 days after their last magic link, Staff and Customers alike.
+# Auth has one setting per project, not one per kind of user. On the cloud project this is set in
+# the dashboard and needs the Pro plan (docs/deploy.md).
+[auth.sessions]
 # Force log out after the specified duration.
-# timebox = "24h"
+timebox = "168h"
 # Force log out if the user has been inactive longer than the specified duration.
 # inactivity_timeout = "8h"
 

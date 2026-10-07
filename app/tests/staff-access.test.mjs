@@ -2,15 +2,23 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { anonymous, signInAs, uniqueEmail } from './helpers.mjs';
 
-test('a Staff member reads their own record and nobody else is shown to them', async () => {
+test('a Staff member reads the other Staff members', async () => {
   const email = uniqueEmail('staff');
+  const otherEmail = uniqueEmail('other');
   const me = await signInAs(email, { staff: {} });
-  await signInAs(uniqueEmail('other'), { staff: {} });
+  await signInAs(otherEmail, { staff: { taskMaster: true } });
 
-  const { data, error } = await me.from('staff').select('email, is_task_master');
+  const { data, error } = await me
+    .from('staff')
+    .select('email, is_task_master')
+    .in('email', [email, otherEmail])
+    .order('is_task_master');
 
   assert.equal(error, null);
-  assert.deepEqual(data, [{ email, is_task_master: false }]);
+  assert.deepEqual(data, [
+    { email, is_task_master: false },
+    { email: otherEmail, is_task_master: true },
+  ]);
 });
 
 test('a signed-in email that is not registered can read nothing', async () => {
@@ -41,7 +49,7 @@ test('a Staff member can change their own language but not their role', async ()
   const promote = await me.from('staff').update({ is_task_master: true }).eq('email', email);
   assert.notEqual(promote.error, null);
 
-  const { data } = await me.from('staff').select('language, is_task_master');
+  const { data } = await me.from('staff').select('language, is_task_master').eq('email', email);
   assert.deepEqual(data, [{ language: 'th', is_task_master: false }]);
 });
 
