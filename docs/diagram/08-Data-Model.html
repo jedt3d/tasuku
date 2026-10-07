@@ -100,6 +100,7 @@ erDiagram
   STAFF {
     uuid user_id PK
     string email UK
+    string name
     boolean is_task_master
     string language
     datetime removed_at
@@ -115,7 +116,7 @@ erDiagram
     string name
   }
   TASK {
-    uuid id PK
+    bigint id PK
     string title
     string description
     string status
@@ -123,15 +124,16 @@ erDiagram
     uuid owner_id FK
     uuid customer_id FK
     uuid organization_id FK
-    uuid refers_to_id FK
+    bigint refers_to_id FK
+    datetime created_at
   }
   COLLABORATOR {
-    uuid task_id FK
+    bigint task_id FK
     uuid staff_id FK
   }
   TIMELINE_ENTRY {
     uuid id PK
-    uuid task_id FK
+    bigint task_id FK
     string kind
     datetime created_at
   }

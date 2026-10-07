@@ -80,6 +80,7 @@ erDiagram
   STAFF {
     uuid user_id PK
     string email UK
+    string name
     boolean is_task_master
     string language
     datetime removed_at
@@ -95,7 +96,7 @@ erDiagram
     string name
   }
   TASK {
-    uuid id PK
+    bigint id PK
     string title
     string description
     string status
@@ -103,15 +104,16 @@ erDiagram
     uuid owner_id FK
     uuid customer_id FK
     uuid organization_id FK
-    uuid refers_to_id FK
+    bigint refers_to_id FK
+    datetime created_at
   }
   COLLABORATOR {
-    uuid task_id FK
+    bigint task_id FK
     uuid staff_id FK
   }
   TIMELINE_ENTRY {
     uuid id PK
-    uuid task_id FK
+    bigint task_id FK
     string kind
     datetime created_at
   }
@@ -139,4 +141,5 @@ erDiagram
 - TIMELINE_ENTRY.kind is comment, event or tombstone (a comment deleted by a Task Master). How the author is stored (Staff or Customer) is not decided in the spec.
 - Closure period (48 h) and reminder lead time (24 h) are stored settings, left out as they do not relate to a Task.
 - A Task Master is a flag on STAFF, not a separate entity (spec #1, Identity and roles).
-- STAFF is the only table built so far (#2, `supabase/migrations/`). Its key is the Auth account id, `user_id`. The other entities are still drawn from the spec, and their key and column names may change when they are built.
+- STAFF (#2, #3) and TASK (#4) are built (`supabase/migrations/`). The key of STAFF is the Auth account id, `user_id`; the key of TASK is a running number, so every `task_id` is drawn as `bigint`. TASK has no `customer_id`, `organization_id` or `refers_to_id` yet. The other entities are still drawn from the spec, and their key and column names may change when they are built.
+- A Task's details change only while it is not Done or Cancelled (#4, from story 70). Spec #1 does not say this about details outright.
