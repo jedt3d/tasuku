@@ -440,6 +440,7 @@ flowchart TB
     db[("Postgres")]:::green
     store[("Private bucket<br/>attachments")]:::green
     cron["Scheduled job<br/>automatic closure"]:::violet
+    fn["Edge Function<br/>send-emails"]:::violet
   end
   mail[["Email sender<br/>Mailpit, Supabase, Mailgun"]]:::grey
   staff --> spa
@@ -451,7 +452,7 @@ flowchart TB
   api --> store
   cron --> db
   auth --> mail
-  db --> mail
+  db --> fn --> mail
   style people fill:none,stroke:#4ba1f1,stroke-width:2px,color:#4ba1f1
   style edge fill:none,stroke:#4ba1f1,stroke-width:2px,color:#4ba1f1
   style supa fill:none,stroke:#4ba1f1,stroke-width:2px,color:#4ba1f1

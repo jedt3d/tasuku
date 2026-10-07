@@ -160,6 +160,16 @@ erDiagram
     datetime deleted_at
     uuid deleted_by FK
   }
+  EMAIL_OUTBOX {
+    bigint id PK
+    bigint entry_id FK
+    uuid recipient FK
+    string kind
+    datetime created_at
+    datetime claimed_at
+    int attempts
+    datetime sent_at
+  }
   STAFF ||--o{ TASK : owns
   CUSTOMER |o--o{ TASK : "is added to"
   ORGANIZATION |o--o{ TASK : labels
@@ -174,6 +184,7 @@ erDiagram
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
   TASK ||--o{ ATTACHMENT : holds
   STAFF |o--o{ ATTACHMENT : deletes
+  TIMELINE_ENTRY ||--o{ EMAIL_OUTBOX : "is announced by"
 </script>
 </main>
 <script type="module">

@@ -140,6 +140,16 @@ erDiagram
     datetime deleted_at
     uuid deleted_by FK
   }
+  EMAIL_OUTBOX {
+    bigint id PK
+    bigint entry_id FK
+    uuid recipient FK
+    string kind
+    datetime created_at
+    datetime claimed_at
+    int attempts
+    datetime sent_at
+  }
   STAFF ||--o{ TASK : owns
   CUSTOMER |o--o{ TASK : "is added to"
   ORGANIZATION |o--o{ TASK : labels
@@ -154,10 +164,12 @@ erDiagram
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
   TASK ||--o{ ATTACHMENT : holds
   STAFF |o--o{ ATTACHMENT : deletes
+  TIMELINE_ENTRY ||--o{ EMAIL_OUTBOX : "is announced by"
 ```
 
 ## Gaps to confirm
 
+- EMAIL_OUTBOX (#10) is built (table `private.email_outbox`, not reachable through the API). One row per person to tell about a Timeline entry; `kind` is `added`, `comment`, `resolved` or `cancelled`. `recipient` is an Auth account id, a Staff member or a Customer, so no line is drawn to either. A row is dropped unsent when its comment was deleted or its recipient left the Task or Staff; `sent_at` is set by the Edge Function `send-emails`.
 - Request is not drawn: spec #1 has no Request record (see the Request question in 02, 03 and 06).
 - Thread is not drawn: the Storybook README says it is planned for a later release.
 - TIMELINE_ENTRY (#5) is built. Its kind is `comment`, `opened`, `moved`, `collaborator_added` or `collaborator_removed` (#6), `customer_added` or `customer_removed` (#7), `attachment_deleted` (#9); later issues add kinds. `subject_id` is set only on the two Collaborator kinds and names the Staff member added or removed; `author_id` is who did it. A comment deleted by a Task Master is the same entry with its `body` emptied and `deleted_at` set, not a separate kind. `status` is set only on `moved`. `author_id` and `customer_id` are both empty when Tasuku itself made the entry.
