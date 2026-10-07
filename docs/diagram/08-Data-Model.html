@@ -132,14 +132,20 @@ erDiagram
     uuid staff_id FK
   }
   TIMELINE_ENTRY {
-    uuid id PK
+    bigint id PK
     bigint task_id FK
     string kind
+    uuid author_id FK
+    string body
+    string status
     datetime created_at
+    datetime edited_at
+    datetime deleted_at
+    uuid deleted_by FK
   }
   ATTACHMENT {
     uuid id PK
-    uuid entry_id FK
+    bigint entry_id FK
     string file_name
     int size_bytes
   }
@@ -151,6 +157,7 @@ erDiagram
   TASK ||--o{ COLLABORATOR : has
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
+  STAFF |o--o{ TIMELINE_ENTRY : writes
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
 </script>
 </main>
