@@ -4,7 +4,8 @@
 -- Staff member creates one. Nobody renames or deletes one yet.
 create table public.organizations (
   id bigint generated always as identity primary key,
-  name text not null check (name ~ '\S' and name = btrim(name) and char_length(name) <= 120),
+  -- No white space around it, line breaks included (`btrim` takes off spaces only).
+  name text not null check (name ~ '^\S' and name ~ '\S$' and char_length(name) <= 120),
   created_at timestamptz not null default now()
 );
 -- "PSP Hospital" and "psp hospital" are one Organization.

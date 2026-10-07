@@ -1,13 +1,6 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { anonymous, openTask, signInAs, staffMember, uniqueEmail } from './helpers.mjs';
-
-const uniqueName = (name) => `${name} ${randomUUID().slice(0, 8)}`;
-
-// Creates an Organization as `client`. Resolves to the API's answer, error included.
-const createOrganization = (client, name = uniqueName('Hospital')) =>
-  client.from('organizations').insert({ name }).select('id, name').single();
+import { anonymous, createOrganization, openTask, signInAs, staffMember, uniqueEmail, uniqueName } from './helpers.mjs';
 
 test('a Staff member creates an Organization, and every Staff member reads it', async () => {
   const name = uniqueName('Bangkok General');
@@ -25,6 +18,7 @@ test('an Organization needs a name, and no two share one', async () => {
   await createOrganization(me, name);
 
   assert.equal((await createOrganization(me, ' \n ')).error?.code, '23514');
+  assert.equal((await createOrganization(me, `${uniqueName('Clinic')}\n`)).error?.code, '23514');
   assert.equal((await createOrganization(me, name.toUpperCase())).error?.code, '23505');
 });
 

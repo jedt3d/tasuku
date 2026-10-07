@@ -6,6 +6,7 @@ import {
   admin,
   anonymous,
   comment,
+  createOrganization,
   customerOf,
   openTask,
   signIn,
@@ -54,9 +55,6 @@ async function timeline(client, task, columns = 'kind, author_id, customer_id') 
   if (error) throw error;
   return data;
 }
-
-const organization = async (client) =>
-  (await client.from('organizations').insert({ name: uniqueEmail('Hospital') }).select('id').single()).data.id;
 
 test('an email used before is offered again, and the same Customer can be on several Tasks', async () => {
   const owner = await staffMember();
@@ -184,7 +182,7 @@ test('nobody changes the Customer of a Task that is Done or Cancelled, who still
 
 test('a Customer reads only the Tasks they are on, their Timelines, and their own record', async () => {
   const owner = await staffMember();
-  const hospital = await organization(owner);
+  const hospital = (await createOrganization(owner)).data.id;
   const mine = await openTask(owner, { organization_id: hospital });
   const theirs = await openTask(owner, { organization_id: hospital });
   await comment(owner, mine, 'For the first Customer.');
@@ -211,7 +209,12 @@ test('a Customer reads only the Tasks they are on, their Timelines, and their ow
   assert.deepEqual(await read(unregistered, 'timeline_entries'), []);
 
   assert.deepEqual(await read(customer, 'customers', 'email'), [{ email }]);
+  assert.equal((await read(colleague, 'customers')).length, 1);
   assert.deepEqual(await read(unregistered, 'customers'), []);
+  assert.equal((await customer.rpc('staff_on_task', { task: mine.id })).data.length, 2);
+  for (const client of [colleague, unregistered]) {
+    assert.deepEqual((await client.rpc('staff_on_task', { task: mine.id })).data, []);
+  }
   for (const client of [customer, colleague, unregistered]) {
     for (const table of ['staff', 'organizations', 'task_collaborators']) {
       assert.deepEqual(await read(client, table), [], table);
@@ -269,7 +272,7 @@ test('a Customer learns the names of the Staff on their Task, and nothing else a
 
 test('any Staff member sets a Customer’s Organization, which need not match their email; nobody else does', async () => {
   const owner = await staffMember();
-  const hospital = await organization(owner);
+  const hospital = (await createOrganization(owner)).data.id;
   const task = await openTask(owner);
   const email = uniqueEmail('personal'); // not an address of the hospital
   const customer = await customerOf(owner, task, email);

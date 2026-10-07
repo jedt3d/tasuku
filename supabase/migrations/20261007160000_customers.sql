@@ -92,6 +92,9 @@ create function public.set_customer(task bigint, customer_email text) returns vo
     person uuid;
     previous uuid;
   begin
+    -- The Task row is held before the caller is checked, so the Task cannot become Done or
+    -- Cancelled between the check and the change.
+    select customer_id into previous from public.tasks where id = task for update;
     if not private.manages_task(task) then
       raise exception 'only the Owner and a Task Master choose the Customer' using errcode = '42501';
     end if;
@@ -102,7 +105,6 @@ create function public.set_customer(task bigint, customer_email text) returns vo
     insert into public.customers (user_id, email) values (person, address)
       on conflict (user_id) do nothing;
 
-    select customer_id into previous from public.tasks where id = task for update;
     if previous is not distinct from person then
       return;
     end if;
@@ -123,10 +125,10 @@ create function public.remove_customer(task bigint) returns void
   declare
     previous uuid;
   begin
+    select customer_id into previous from public.tasks where id = task for update;
     if not private.manages_task(task) then
       raise exception 'only the Owner and a Task Master choose the Customer' using errcode = '42501';
     end if;
-    select customer_id into previous from public.tasks where id = task for update;
     if previous is null then
       return;
     end if;
