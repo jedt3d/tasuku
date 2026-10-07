@@ -15,7 +15,7 @@ The plan and the issue originally said Cloudflare Pages. The deployed target is 
 
 - [x] Cloudflare: Worker `tasuku` deployed with a placeholder page, Custom Domain attached, HTTPS 200
 - [x] Supabase Auth: Site URL and redirect allow list set
-- [ ] Supabase: schema and Row Level Security applied (migrations come from #2 and #3)
+- [ ] Supabase: schema and Row Level Security applied (migrations are in `supabase/migrations/`, from #2 on)
 - [ ] App built from the repo and deployed to the Worker
 - [ ] First Task Master seeded and signed in with a magic link on the deployed app
 - [ ] Mailgun SMTP configured (before real use)
@@ -65,7 +65,7 @@ curl -X PATCH "https://api.supabase.com/v1/projects/nhibizypckyznlzprsnv/config/
   -d '{"site_url":"https://tasuku.servicework.cloud","uri_allow_list":"https://tasuku.servicework.cloud/**,http://localhost:5173/**"}'
 ```
 
-This list lives only in the cloud project. If #2 adds redirect URLs to the local `supabase/config.toml`, the two are not kept in sync automatically.
+This list lives only in the cloud project. The local stack has its own in `supabase/config.toml` (`site_url` and `additional_redirect_urls`, both `http://localhost:5173`); the two are not kept in sync automatically. The same file closes sign-up locally with `[auth] enable_signup = false`. Leave `[auth.email] enable_signup` on: turning that one off disables email sign-in altogether.
 
 ## 3. Email
 
@@ -82,10 +82,23 @@ Applied from the repo's migrations once #2 and #3 provide them, with the Supabas
 
 ## 5. Deploy the app and seed the first Task Master (open)
 
-1. Build the static app and point `assets.directory` at its output folder.
-2. Provide the Supabase project URL and the **publishable** key to the build as environment variables. Never use the secret / service-role key in the frontend or the repo.
+1. Build the static app in `app/` with the Supabase project URL and the **publishable** key in the environment. The build refuses to run without them. Never use the secret / service-role key in the frontend or the repo.
+
+   ```bash
+   cd app && npm ci
+   VITE_SUPABASE_URL=https://nhibizypckyznlzprsnv.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=... npm run build
+   ```
+
+2. Point `assets.directory` at `app/build`. The build writes `index.html` as the shell that `not_found_handling: single-page-application` serves for every path.
 3. `npx wrangler deploy`.
-4. Seed the first Task Master as a registered user (method to be written when #2 defines the seed), then sign in with a magic link on the deployed app.
+4. Seed the first Task Master. This is the one step that needs the secret key: keep it in your shell, and unset it afterwards.
+
+   ```bash
+   cd app
+   SUPABASE_URL=https://nhibizypckyznlzprsnv.supabase.co SUPABASE_SECRET_KEY=... TASK_MASTER_EMAIL=... node scripts/seed.mjs
+   ```
+
+   It creates the account and registers it as Staff with the Task Master flag; running it again changes nothing. Then sign in with a magic link on the deployed app. While the built-in sender is in use the address must be a member of the Supabase organization (section 3).
 
 ## Sign-up is closed
 
