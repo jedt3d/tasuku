@@ -88,7 +88,7 @@ flowchart TD
   isMaster -->|"no"| isOwner{"Owner of<br/>this Task?"}:::orange
   isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
   isOwner -->|"no"| isCollab{"Collaborator<br/>on this Task?"}:::orange
-  isCollab -->|"yes"| collab["Collaborator<br/>Reads every Task<br/>Comments and attaches files<br/>Cannot propose closing"]:::blue
+  isCollab -->|"yes"| collab["Collaborator<br/>Reads every Task<br/>Comments, attaches files, edits details<br/>Cannot change the Owner, close or cancel<br/>Does not manage who is on the Task"]:::blue
   isCollab -->|"no"| reader["Other Staff<br/>Reads every Task, read-only"]:::blue
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
@@ -107,3 +107,4 @@ flowchart TD
 - A Task Master who is also the Owner is drawn as Task Master, who can do everything an Owner can.
 - The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54).
 - Whether a Collaborator may remove themselves is not covered by the spec.
+- The Collaborator box follows CONTEXT.md as changed in #3. Spec #1 (story 30) still describes a Collaborator as commenting and attaching only.
