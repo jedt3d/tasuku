@@ -386,8 +386,17 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# What `send-emails` needs on the local stack (#10); the cloud project has its own
+# (docs/deploy.md). The secret is the one the database sends, from supabase/seed.sql.
+[edge_runtime.secrets]
+SEND_EMAILS_SECRET = "local-only-not-a-secret"
+MAILPIT_URL = "http://inbucket:8025"
+MAIL_FROM = "Tasuku <no-reply@tasuku.servicework.cloud>"
+SITE_URL = "http://localhost:5173"
+
+# Called by the database, which has no JWT: the function checks SEND_EMAILS_SECRET itself.
+[functions.send-emails]
+verify_jwt = false
 
 [analytics]
 enabled = true

@@ -109,6 +109,7 @@ flowchart LR
   signup["Turn off<br/>new sign-ups"]:::blue
   session["Sessions time-boxed to 7 days<br/>needs the Pro plan"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
+  emails["Deploy send-emails<br/>its secrets and Vault"]:::blue
   cf --> app
   auth --> seed
   schema --> seed
@@ -118,6 +119,8 @@ flowchart LR
   invite --> signup
   auth --> session
   seed -.->|"before real use"| mailgun
+  schema --> emails
+  mailgun -.->|"API key"| emails
 
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
