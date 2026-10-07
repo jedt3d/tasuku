@@ -147,12 +147,18 @@ erDiagram
     datetime edited_at
     datetime deleted_at
     uuid deleted_by FK
+    boolean has_files
   }
   ATTACHMENT {
-    uuid id PK
+    bigint id PK
     bigint entry_id FK
-    string file_name
-    int size_bytes
+    bigint task_id FK
+    string path
+    string name
+    string mime_type
+    bigint size
+    datetime deleted_at
+    uuid deleted_by FK
   }
   STAFF ||--o{ TASK : owns
   CUSTOMER |o--o{ TASK : "is added to"
@@ -166,6 +172,8 @@ erDiagram
   STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
   CUSTOMER |o--o{ TIMELINE_ENTRY : "writes or is the subject of"
   TIMELINE_ENTRY ||--o{ ATTACHMENT : carries
+  TASK ||--o{ ATTACHMENT : holds
+  STAFF |o--o{ ATTACHMENT : deletes
 </script>
 </main>
 <script type="module">
