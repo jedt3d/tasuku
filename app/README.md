@@ -34,13 +34,14 @@ To sign in locally, enter `task.master@example.test` and open the magic link in 
 
 - `src/routes/`: the pages. The top bar with the language switcher is in the layout, so it is on every page.
 - `src/lib/`: the Supabase client and the signed-in state.
-- `src/lib/Overview.svelte`: the Staff landing page: the Task list by status, My Tasks, and the New
-  Task panel. Its By Organization and Activity views and the search box are placeholders until
+- `src/lib/Overview.svelte`: the Staff landing page: the Task list by status, My Tasks (the ones the
+  reader owns or collaborates on), and the New Task panel. Its By Organization and Activity views and the search box are placeholders until
   Organizations and the Timeline exist.
-- `src/routes/tasks/[id]/`: one Task. Its Owner and a Task Master edit the title, description and due
-  date there; the status and the Owner are never written directly (`../supabase/migrations/`).
-  Below the details is the Timeline: comments and events in time order. The Owner and a Task Master
-  comment; an author edits their comment for 15 minutes; a Task Master deletes one, which leaves a
+- `src/routes/tasks/[id]/`: one Task. Its Owner, its Collaborators and a Task Master edit the title,
+  description and due date there; the status and the Owner are never written directly
+  (`../supabase/migrations/`). The Owner and a Task Master add and remove Collaborators.
+  Below the details is the Timeline: comments and events in time order. The Owner, the Collaborators
+  and a Task Master comment; an author edits their comment for 15 minutes; a Task Master deletes one, which leaves a
   marker. The first Staff comment moves an Open Task to In progress. Attaching files comes later.
 - `src/routes/staff/`: the Staff list. A Task Master adds, removes, promotes and demotes there, and
   each Staff member sets the name shown on their Tasks.

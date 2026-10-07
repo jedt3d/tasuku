@@ -50,7 +50,7 @@ test('every Staff member reads a Task, with its Owner’s name', async () => {
 
   const { data, error } = await reader
     .from('tasks')
-    .select('title, status, owner:staff(name, email)')
+    .select('title, status, owner:staff!owner_id(name, email)')
     .eq('id', task.id);
 
   assert.equal(error, null);
