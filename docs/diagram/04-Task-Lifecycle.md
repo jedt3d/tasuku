@@ -113,5 +113,5 @@ stateDiagram-v2
 ## Gaps to confirm
 
 - Done and Cancelled are terminal (spec #1 story 70). Cancelling a Resolved Task is not drawn: the spec table allows Cancelled only from Open and In progress.
-- Who may Reopen: CONTEXT.md does not say, spec #1 says Customer or Task Master, and v1-plan.md says Customer only.
+- Who may Reopen: CONTEXT.md does not say, spec #1 says Customer or Task Master, and v1-plan.md says Customer only. As built in #8 it is the Customer or a Task Master; issue #8 itself names only the Customer, so the user is asked to confirm in PR #31.
 - The 48 h closure period (and the 24 h reminder before it) is a Task Master setting, see 09 and the spec.

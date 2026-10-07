@@ -13,7 +13,7 @@
   // Row Level Security leaves out of an answer what the reader may not read (ADR 0002): to a
   // Customer the Owner, the Organization and every Staff member come back as null.
   const columns =
-    'id, title, description, due_date, status, owner_id, customer_id, organization_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
+    'id, title, description, due_date, status, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
 
   const entryColumns =
     'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email)';
@@ -45,6 +45,25 @@
   const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
   // The Customer comments, and changes nothing else.
   const canComment = $derived(canWrite || (task?.customer_id === auth.userId && !closed));
+  // An Owner who is also the Customer of their Task does not confirm their own proposal (#8).
+  const asCustomer = $derived(task?.customer_id === auth.userId && task?.owner_id !== auth.userId && !closed);
+  // What the reader may do to the status, each with the label of its button.
+  const moves = $derived.by(() => {
+    const status = task?.status;
+    const live = status === 'open' || status === 'in_progress';
+    const ownsAlone = task?.owner_id === auth.userId && !task?.customer_id;
+    const confirms = isTaskMaster && status === 'resolved';
+    return [
+      status === 'in_progress' && canManage && { action: 'resolve', label: 'task.markResolved', variant: 'primary' },
+      (asCustomer || (canManage && (ownsAlone || confirms))) && {
+        action: 'complete',
+        label: status !== 'resolved' ? 'customer.markDone' : asCustomer ? 'customer.yesDone' : 'task.confirmDone',
+        variant: status === 'resolved' ? 'primary' : 'secondary',
+      },
+      status === 'resolved' && (asCustomer || (canManage && isTaskMaster)) && { action: 'reopen', label: 'task.reopen' },
+      live && (asCustomer || canManage) && { action: 'cancel', label: asCustomer ? 'customer.cancel' : 'task.cancel' },
+    ].filter(Boolean);
+  });
   // A Customer reads no Staff record, only names; a Staff member who has set no name is "PSP" to them.
   const staffName = (id, person) => (person ? displayName(person) : names[id] || 'PSP');
   // A Customer reads no other Customer's record: the one before them is "Customer".
@@ -62,7 +81,7 @@
       if (entry.kind === 'collaborator_removed') collaborating.delete(entry.subject_id);
       const actor = entry.author_id
         ? staffName(entry.author_id, entry.author)
-        : entry.kind === 'comment'
+        : entry.customer_id
           ? customerName(entry.customer)
           : 'Tasuku';
       if (entry.kind === 'opened') return { kind: 'event', icon: 'plus', actor, key: 'event.opened', at: entry.created_at };
@@ -148,6 +167,7 @@
       description: task.description,
       due_date: task.due_date ?? '',
       organization_id: task.organization_id ?? '',
+      earlier_task_id: task.earlier_task_id ?? '',
     });
 
   async function save(event) {
@@ -160,6 +180,7 @@
         description: draft.description.trim(),
         due_date: draft.due_date || null,
         organization_id: draft.organization_id || null,
+        earlier_task_id: Number(draft.earlier_task_id) || null,
       })
       .eq('id', task.id)
       .select(columns)
@@ -258,6 +279,17 @@
     if (error) problem = 'common.error';
   }
 
+  // Done and Cancelled are final, so both ask first. The database decides who may (ADR 0002).
+  async function move(action) {
+    const final = action === 'complete' || action === 'cancel';
+    if (busy || (final && !confirm(t('task.confirmFinal')))) return;
+    busy = true;
+    const { error } = await supabase.rpc(`${action}_task`, { task: task.id });
+    busy = false;
+    await refresh(page.params.id);
+    if (error) problem = 'common.error';
+  }
+
   async function remove(entry) {
     if (!confirm(t('timeline.confirmDelete'))) return;
     const { error } = await supabase.rpc('delete_comment', { entry_id: entry.id });
@@ -294,6 +326,13 @@
             {/each}
           </select>
         </label>
+        <Field
+          label={t('task.related')}
+          type="number"
+          placeholder="#"
+          action={t('common.optional')}
+          bind:value={draft.earlier_task_id}
+        />
         <div class="actions">
           <Button type="button" label={t('common.cancel')} onclick={() => (draft = null)} />
           <Button type="submit" variant="primary" label={t('common.save')} disabled={busy || !complete} />
@@ -404,12 +443,30 @@
           {/if}
         </dd>
         {/if}
+        {#if task.earlier_task_id}
+          <dt>{t('task.related')}</dt>
+          <dd>
+            {#if auth.staff}
+              <a href="/tasks/{task.earlier_task_id}">#{task.earlier_task_id}</a>
+            {:else}
+              #{task.earlier_task_id}
+            {/if}
+          </dd>
+        {/if}
         {#if task.due_date}
           <dt>{t('task.dueDate')}</dt>
           <dd>{formatDate(task.due_date, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
         {/if}
       </dl>
       <p class="description">{task.description}</p>
+      {#if moves.length || auth.staff}
+        <div class="actions">
+          {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newRelated')}</a>{/if}
+          {#each moves as { action, label, variant } (action)}
+            <Button size="sm" {variant} label={t(label)} disabled={busy} onclick={() => move(action)} />
+          {/each}
+        </div>
+      {/if}
 
       <h2>{t('timeline.title')}</h2>
       <Timeline entries={shown} cards viewer={auth.staff ? 'staff' : 'customer'} onedit={startEdit} ondelete={remove} />

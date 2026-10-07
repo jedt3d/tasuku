@@ -103,9 +103,9 @@ flowchart TD
 
 ## Gaps to confirm
 
-- One email can be both Staff and Customer: a Staff member's email can be added as the Customer of a Task, and what they write there counts as Staff's (decided by the user in #7). Such a person is drawn on the Staff side.
+- One email can be both Staff and Customer: a Staff member's email can be added as the Customer of a Task, and what they write there counts as Staff's (decided by the user in #7). Such a person is drawn on the Staff side. As built in #8 they also confirm Done, Reopen and cancel as the Customer of that Task, unless they are its Owner: an Owner never confirms their own proposal (decided by the user, 7 Oct 2026). This is not drawn.
 - As built in #7, any Staff member sets a Customer's Organization, and a Customer sees the names of the Staff on their Task but never an email (both decided by the user, 7 Oct 2026). Neither is drawn.
-- As built in #7, a Customer's comment leaves an Open Task Open, and a Customer edits their own comment for 15 minutes. Marking Done, Reopen, Cancel and attachments in the Customer box are not built yet (#8, #9).
+- As built in #7, a Customer's comment leaves an Open Task Open, and a Customer edits their own comment for 15 minutes. Marking Done, Reopen and Cancel in the Customer box are built (#8); attachments are not (#9).
 - A Task Master who is also the Owner is drawn as Task Master, who can do everything an Owner can.
 - The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54).
 - Whether a Collaborator may remove themselves is not covered by the spec. As built in #6 they cannot: only the Owner and a Task Master remove a Collaborator (confirmed by the user, 7 Oct 2026).

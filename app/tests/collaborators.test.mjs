@@ -4,6 +4,7 @@ import {
   addCollaborator,
   admin,
   anonymous,
+  close,
   comment,
   openTask,
   signInAs,
@@ -192,7 +193,7 @@ test('nobody adds or removes a Collaborator on a Task that is Done or Cancelled'
   for (const status of ['done', 'cancelled']) {
     const task = await openTask(owner);
     await addCollaborator(owner, task, collaborator);
-    await admin.from('tasks').update({ status }).eq('id', task.id);
+    await close(owner, task, status);
 
     for (const client of [owner, master]) {
       assert.equal((await addCollaborator(client, task, other)).error?.code, '42501');

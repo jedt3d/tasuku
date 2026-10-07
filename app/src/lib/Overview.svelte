@@ -9,17 +9,20 @@
   import SlideOver from '@ui/lib/SlideOver.svelte';
   import Tabs from '@ui/lib/Tabs.svelte';
   import { formatDate, t } from '@ui/i18n/index.svelte.js';
+  import { page } from '$app/state';
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
-  const blank = { title: '', description: '', due_date: '', organization_id: '' };
+  const blank = { title: '', description: '', due_date: '', organization_id: '', earlier_task_id: '' };
+  // "New Task that refers to this one" on a Task leads here with the number of that Task.
+  const earlier = page.url.searchParams.get('earlier') ?? '';
 
   let status = $state('all');
   let view = $state('all');
   let tasks = $state([]);
   let problem = $state(''); // a message key, or '' when there is nothing to report
-  let panel = $state(false);
-  let draft = $state({ ...blank });
+  let panel = $state(Boolean(earlier));
+  let draft = $state({ ...blank, earlier_task_id: earlier });
   let busy = $state(false);
   let organizations = $state([]); // every Organization, by name
   let organization = $state(''); // the id chosen in "By Organization", or '' before one is chosen
@@ -64,6 +67,7 @@
       description: draft.description.trim(),
       due_date: draft.due_date || null,
       organization_id: draft.organization_id || null,
+      earlier_task_id: Number(draft.earlier_task_id) || null,
     });
     busy = false;
     if (error) {
@@ -169,6 +173,13 @@
       </select>
       <small>{t('new.orgHint')}</small>
     </label>
+    <Field
+      label={t('task.related')}
+      type="number"
+      placeholder="#"
+      action={t('common.optional')}
+      bind:value={draft.earlier_task_id}
+    />
     {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
   </div>
   {#snippet footer()}

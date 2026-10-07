@@ -178,6 +178,7 @@ export default {
   'composer.closed': 'このタスクは完了またはキャンセルされているため、コメントできません。',
   'timeline.edit': '編集',
   'timeline.delete': '削除',
+  'task.confirmFinal': '完了とキャンセルは最終状態です。このタスクは二度と変更できません。続けますか？',
   'timeline.confirmDelete': 'このコメントを削除しますか？本文は全員に対して消去され、元に戻せません。',
   'timeline.editing': '自分のコメントを編集中',
   'timeline.editClosed': 'このコメントはもう編集できません。コメントを編集できるのは投稿後 15 分間です。',

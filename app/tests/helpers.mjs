@@ -8,7 +8,7 @@ export const env = localSupabase();
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 
 // The secret key bypasses Row Level Security: tests use it only to arrange, never to assert. It
-// arranges users, the age of a comment, and a Task's closing status until a function sets one (#8).
+// arranges users and the age of a comment.
 export const admin = createClient(env.url, env.secretKey, options);
 export const anonymous = () => createClient(env.url, env.publishableKey, options);
 
@@ -81,4 +81,14 @@ export async function customerOf(client, task, email = uniqueEmail('customer')) 
   const { error } = await addCustomer(client, task, email);
   if (error) throw error;
   return signIn(email);
+}
+
+// Moves `task` as `client`: `action` is resolve, complete (Done), reopen or cancel.
+// Resolves to the API's answer, error included.
+export const move = (client, task, action) => client.rpc(`${action}_task`, { task: task.id });
+
+// Arranges a Task that is Done or Cancelled, acting as someone who may close it.
+export async function close(client, task, status) {
+  const { error } = await move(client, task, status === 'done' ? 'complete' : 'cancel');
+  if (error) throw error;
 }

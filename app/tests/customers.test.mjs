@@ -5,6 +5,7 @@ import {
   addCustomer,
   admin,
   anonymous,
+  close,
   comment,
   createOrganization,
   customerOf,
@@ -170,7 +171,7 @@ test('nobody changes the Customer of a Task that is Done or Cancelled, who still
   for (const closing of ['done', 'cancelled']) {
     const task = await openTask(owner);
     const customer = await customerOf(owner, task);
-    await admin.from('tasks').update({ status: closing }).eq('id', task.id);
+    await close(customer, task, closing);
 
     for (const client of [owner, master]) {
       assert.equal(status(await addCustomer(client, task, uniqueEmail('late'))), 403);
@@ -390,12 +391,12 @@ test('a Customer cannot comment on, or edit in, a Task that is Done or Cancelled
     const task = await openTask(owner);
     const customer = await customerOf(owner, task);
     const { data: entry } = await comment(customer, task);
-    await admin.from('tasks').update({ status: closing }).eq('id', task.id);
+    await close(customer, task, closing);
 
     assert.equal((await comment(customer, task, 'One more thing')).error?.code, '42501');
     const reworded = await customer.from('timeline_entries').update({ body: 'Rewritten' }).eq('id', entry.id).select();
     assert.deepEqual(reworded.data, []);
-    assert.equal((await timeline(customer, task)).length, 3);
+    assert.equal((await timeline(customer, task)).length, 4);
   }
 });
 

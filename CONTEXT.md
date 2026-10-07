@@ -60,7 +60,7 @@ A Staff member whose access a Task Master has taken away. They can read and chan
 _Avoid_: Deleted, deactivated, disabled
 
 **Customer**:
-A person outside PSP, identified by a verified email address, who can only reach their own Requests and the Tasks they have been added to. A Staff member's email can also be added as the Customer of a Task; what they write there still counts as Staff's.
+A person outside PSP, identified by a verified email address, who can only reach their own Requests and the Tasks they have been added to. A Staff member's email can also be added as the Customer of a Task; what they write there still counts as Staff's. Such a Staff member confirms, Reopens and cancels as the Customer does, unless they are the Owner of that Task: an Owner never confirms their own proposal.
 _Avoid_: Guest, client, external user
 
 **Task Master**:
