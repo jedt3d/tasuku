@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import Button from '@ui/lib/Button.svelte';
   import Field from '@ui/lib/Field.svelte';
   import Icon from '@ui/lib/Icon.svelte';
@@ -19,9 +20,14 @@
     if (!address) return;
     sending = true;
     problem = '';
+    // Someone who came from the link in an email goes back to that Task, and nowhere else.
+    const next = page.url.searchParams.get('next') ?? '';
     const { error } = await supabase.auth.signInWithOtp({
       email: address,
-      options: { shouldCreateUser: false, emailRedirectTo: location.origin },
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: location.origin + (/^\/tasks\/\d+$/.test(next) ? next : ''),
+      },
     });
     sending = false;
     // An email with no account is refused and sent nothing (ADR 0003). Say so: the API response

@@ -1,8 +1,10 @@
 // Fails when the three languages disagree: a key missing or extra, or a {placeholder} that differs.
-// Covers interface text (src/i18n/*.js) and design notes (src/i18n/notes/*.js).
+// Covers interface text (src/i18n/*.js), design notes (src/i18n/notes/*.js) and the emails
+// (supabase/functions/send-emails/emails/*.js, which live with the function that sends them).
 const sets = {
   messages: ['en', 'th', 'ja'].map((l) => [l, `../src/i18n/${l}.js`]),
   notes: ['en', 'th', 'ja'].map((l) => [l, `../src/i18n/notes/${l}.js`]),
+  emails: ['en', 'th', 'ja'].map((l) => [l, `../../supabase/functions/send-emails/emails/${l}.js`]),
 };
 
 // Design notes are nested one level: flatten to "entry.field" → text.

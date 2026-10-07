@@ -23,6 +23,7 @@ The plan and the issue originally said Cloudflare Pages. The deployed target is 
 - [ ] Supabase: both invite functions deployed (section 6)
 - [ ] Supabase: "Allow new users to sign up" turned off, once the invite function is deployed
 - [ ] Supabase: sessions time-boxed to 7 days (section 7; needs the Pro plan)
+- [ ] Supabase: `send-emails` deployed, with its secrets and the two Vault secrets (section 8)
 
 ## 1. Cloudflare Worker and domain
 
@@ -78,6 +79,8 @@ The built-in Supabase sender is used for testing. Limits that matter:
 
 So the first Task Master must be an organization member, and magic-link tests should not be repeated quickly. Before Staff and Customers use it, configure Mailgun as custom SMTP in Authentication → SMTP Settings (credentials go in the Supabase dashboard only).
 
+Those settings are for the mail Supabase Auth sends (magic links). The notification emails of Tasuku do not go through them, and never through the built-in sender: see section 8.
+
 ## 4. Schema and Row Level Security (open)
 
 Applied from the repo's migrations once #2 and #3 provide them, with the Supabase CLI: `supabase login`, `supabase link --project-ref nhibizypckyznlzprsnv`, `supabase db push`. All access rules live in Row Level Security (ADR 0002), so confirm the policies are present before exposing the app.
@@ -118,6 +121,34 @@ They read `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` fr
 Everyone signs in again 7 days after their last magic link: Staff, Task Masters and Customers alike. Supabase Auth has one setting per project, not one per kind of user, so the 30 days for Staff in spec #1 was dropped (decided in #3).
 
 Locally this is `[auth.sessions] timebox = "168h"` in `supabase/config.toml`. On the cloud project it is the time-box setting under Authentication → Sessions, and it **needs the Pro plan**. On the Free plan a session never expires. No test covers this: the test seam cannot wait 7 days.
+
+## 8. Notification emails (open)
+
+Being added to a Task, a comment by someone else, a Task becoming Resolved and the Customer cancelling each send an email (#10). The database writes who must be told into `private.email_outbox`, in the transaction of the event, and calls the Edge Function `send-emails` (pg_net); pg_cron calls it again every minute while something is waiting. An email that fails stays in the outbox and is tried five times. None of this has been tried on the cloud project yet.
+
+The migration installs `pg_net` and `pg_cron`. Edge Functions cannot open ports 25 and 587, so the function sends through Mailgun's HTTP API, not SMTP: it needs a Mailgun API key, which is not the SMTP password of section 3.
+
+1. Deploy the function. It is called by the database, which has no JWT, so it checks a secret of its own (`verify_jwt = false` in `supabase/config.toml`):
+
+   ```bash
+   supabase functions deploy send-emails
+   ```
+
+2. Set its secrets. `MAILGUN_URL` is the whole address of the messages endpoint: `https://api.mailgun.net/v3/<domain>/messages`, or `https://api.eu.mailgun.net/...` for a domain in the EU region. Choose a long random value for `SEND_EMAILS_SECRET`.
+
+   ```bash
+   supabase secrets set SEND_EMAILS_SECRET=... MAILGUN_URL=... MAILGUN_API_KEY=... \
+     MAIL_FROM='Tasuku <no-reply@tasuku.servicework.cloud>' SITE_URL=https://tasuku.servicework.cloud
+   ```
+
+3. Tell the database where the function is and which secret to send, in the SQL editor. Until both exist nothing is called and the outbox keeps what is waiting.
+
+   ```sql
+   select vault.create_secret('https://nhibizypckyznlzprsnv.supabase.co/functions/v1/send-emails', 'send_emails_url');
+   select vault.create_secret('<the value of SEND_EMAILS_SECRET>', 'send_emails_secret');
+   ```
+
+To see what is waiting or has failed: `select * from private.email_outbox where sent_at is null;`. The function logs why a send failed (Edge Functions → Logs). The local stack sends to Mailpit instead (`MAILPIT_URL` in `supabase/config.toml`, the Vault secrets in `supabase/seed.sql`).
 
 ## Sign-up is closed
 

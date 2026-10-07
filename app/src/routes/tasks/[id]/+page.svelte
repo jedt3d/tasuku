@@ -1,4 +1,5 @@
 <script>
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Badge from '@ui/lib/Badge.svelte';
   import Button from '@ui/lib/Button.svelte';
@@ -391,6 +392,9 @@
 
   $effect(() => {
     if (auth.staff || auth.customer) load(page.params.id);
+    // An email links here (#10): whoever is not signed in asks for a magic link, which brings
+    // them back to this Task.
+    else if (!auth.email) goto(`/?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true });
   });
 </script>
 

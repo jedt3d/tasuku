@@ -114,3 +114,21 @@ export async function attach(client, task, { body = '', names = ['report.pdf'] }
   }
   return client.rpc('comment_with_files', { task: task.id, body, files });
 }
+
+// The emails Mailpit holds for `email`, read once at least `count` have arrived. With no
+// `count` it reads what is there now: use it for "no email" after another one of the same event
+// has arrived and `settle()` has passed.
+export async function emailsTo(email, count = 0) {
+  const search = `${env.mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`;
+  for (let attempt = 0; ; attempt++) {
+    const { messages } = await (await fetch(search)).json();
+    if (messages.length >= count || attempt === 40) {
+      return Promise.all(
+        messages.map(async ({ ID }) => (await fetch(`${env.mailpitUrl}/api/v1/message/${ID}`)).json()),
+      );
+    }
+    await settle(250);
+  }
+}
+
+export const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
