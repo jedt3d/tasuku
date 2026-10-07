@@ -125,7 +125,7 @@ sequenceDiagram
   end
   P->>Auth: click the link
   Auth-->>App: session
-  Note over Auth,App: Staff session 30 days, Customer session 7 days
+  Note over Auth,App: Session ends 7 days after sign-in, for everyone
   App->>DB: what may this email see
   alt Email is registered as Staff
     DB-->>App: every Task, write only on own Tasks

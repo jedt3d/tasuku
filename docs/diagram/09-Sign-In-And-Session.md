@@ -105,7 +105,7 @@ sequenceDiagram
   end
   P->>Auth: click the link
   Auth-->>App: session
-  Note over Auth,App: Staff session 30 days, Customer session 7 days
+  Note over Auth,App: Session ends 7 days after sign-in, for everyone
   App->>DB: what may this email see
   alt Email is registered as Staff
     DB-->>App: every Task, write only on own Tasks
@@ -119,7 +119,7 @@ sequenceDiagram
 
 ## Gaps to confirm
 
-- How the session length differs between Staff and Customer is not described (spec #1 gives only the two durations).
+- Session length is one setting for the whole project, so Staff and Customers both get 7 days from sign-in (decided in #3; spec #1 still says 30 days for Staff). On the cloud project it needs the Pro plan and is not set yet (deploy.md section 7).
 - A signed-in person with no access sees a message that the email has no access to any Task yet (#2).
 - The sign-in page tells a person that their email is not registered, instead of always saying "check your email" (decided in PR #17). It is not drawn.
 - At sign-in the language stored for the person always wins over the one the browser remembered (decided in PR #17). It is not drawn.
