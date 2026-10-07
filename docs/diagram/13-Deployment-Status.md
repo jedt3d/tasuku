@@ -85,7 +85,7 @@ flowchart LR
   schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
   app["Build the app and<br/>deploy to the Worker"]:::blue
   seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
-  invite["Deploy the<br/>invite function"]:::blue
+  invite["Deploy the two<br/>invite functions"]:::blue
   signup["Turn off<br/>new sign-ups"]:::blue
   session["Sessions time-boxed to 7 days<br/>needs the Pro plan"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
@@ -112,7 +112,7 @@ flowchart LR
 
 ## Gaps to confirm
 
-- Sign-ups can only be turned off once the invite function is deployed (deploy.md section 6); before that nobody new could be added.
+- Sign-ups can only be turned off once the invite functions are deployed (`invite-staff` and, since #7, `invite-customer`; deploy.md section 6); before that nobody new could be added.
 - The 7-day session setting needs the Supabase Pro plan; on the Free plan a session never expires (deploy.md section 7).
 - The first Task Master must be a Supabase organization member while the built-in email sender is in use (deploy.md section 3), so the seed step is also gated on that.
 - This diagram mirrors the checklist; when a box in deploy.md is ticked, its colour here changes to green.

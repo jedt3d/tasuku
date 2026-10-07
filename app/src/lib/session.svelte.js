@@ -4,7 +4,9 @@ import { untrack } from 'svelte';
 import { setLocale } from '@ui/i18n/index.svelte.js';
 import { supabase } from './supabase.js';
 
-export const auth = $state({ ready: false, failed: false, userId: null, email: null, staff: null });
+// `staff` and `customer` are the person's own records, or null. Someone who is both is shown the
+// Staff side of Tasuku.
+export const auth = $state({ ready: false, failed: false, userId: null, email: null, staff: null, customer: null });
 
 // The browser remembers the language only for visits that are not signed in.
 const LOCALE = 'tasuku.locale';
@@ -14,9 +16,9 @@ const browser = {
 };
 
 function saveLanguage(code) {
-  auth.staff.language = code;
+  (auth.staff ?? auth.customer).language = code;
   supabase
-    .from('staff')
+    .from(auth.staff ? 'staff' : 'customers')
     .update({ language: code })
     .eq('user_id', auth.userId)
     .then(({ error }) => error && console.error('Language preference was not saved:', error.message));
@@ -28,21 +30,23 @@ async function load(session) {
   if (auth.ready && userId === auth.userId) return;
 
   let staff = null;
+  let customer = null;
   let failed = false;
   if (session) {
     // A signed-in email that is not registered gets no row, and so no stored language.
-    const { data, error } = await supabase
-      .from('staff')
-      .select('name, is_task_master, language')
-      .eq('user_id', userId)
-      .maybeSingle();
-    staff = data;
-    failed = Boolean(error);
+    const [asStaff, asCustomer] = await Promise.all([
+      supabase.from('staff').select('name, is_task_master, language').eq('user_id', userId).maybeSingle(),
+      supabase.from('customers').select('language').eq('user_id', userId).maybeSingle(),
+    ]);
+    staff = asStaff.data;
+    customer = asCustomer.data;
+    failed = Boolean(asStaff.error ?? asCustomer.error);
   }
-  Object.assign(auth, { userId, email: session?.user.email ?? null, staff, failed, ready: true });
+  Object.assign(auth, { userId, email: session?.user.email ?? null, staff, customer, failed, ready: true });
 
   // Once signed in, the stored preference always wins over what this browser remembered.
-  if (staff) setLocale(staff.language);
+  const stored = (staff ?? customer)?.language;
+  if (stored) setLocale(stored);
 }
 
 export function start() {
@@ -59,7 +63,8 @@ export function rememberLocale(code) {
   if (code === (browser.get(LOCALE) ?? 'en')) return;
   browser.set(LOCALE, code);
   untrack(() => {
-    if (auth.staff && auth.staff.language !== code) saveLanguage(code);
+    const me = auth.staff ?? auth.customer;
+    if (me && me.language !== code) saveLanguage(code);
   });
 }
 

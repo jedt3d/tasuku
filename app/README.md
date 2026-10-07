@@ -35,18 +35,23 @@ To sign in locally, enter `task.master@example.test` and open the magic link in 
 - `src/routes/`: the pages. The top bar with the language switcher is in the layout, so it is on every page.
 - `src/lib/`: the Supabase client and the signed-in state.
 - `src/lib/Overview.svelte`: the Staff landing page: the Task list by status, My Tasks (the ones the
-  reader owns or collaborates on), and the New Task panel. Its By Organization and Activity views and the search box are placeholders until
-  Organizations and the Timeline exist.
+  reader owns or collaborates on), the Tasks of one Organization, and the New Task panel. Staff create
+  Organizations there. The Organization cards of the prototype, the Activity view and the search box are not built yet.
+- `src/lib/CustomerHome.svelte`: what a Customer lands on: the Tasks they are on, and nothing else.
 - `src/routes/tasks/[id]/`: one Task. Its Owner, its Collaborators and a Task Master edit the title,
   description and due date there; the status and the Owner are never written directly
   (`../supabase/migrations/`). The Owner and a Task Master add and remove Collaborators.
   Below the details is the Timeline: comments and events in time order. The Owner, the Collaborators
   and a Task Master comment; an author edits their comment for 15 minutes; a Task Master deletes one, which leaves a
   marker. The first Staff comment moves an Open Task to In progress. Attaching files comes later.
+  The Owner and a Task Master add one Customer by email (emails used before are offered), replace
+  them or take them off; any Staff member sets the Customer's Organization. The Customer sees the
+  same page without the Staff controls: the Task, its Timeline and a box to comment. They are shown
+  the names of Staff, never an email; a Staff member with no name appears as "PSP".
 - `src/routes/staff/`: the Staff list. A Task Master adds, removes, promotes and demotes there, and
   each Staff member sets the name shown on their Tasks.
-- `../supabase/functions/invite-staff/`: the invite function, the only place an account is created
-  (`docs/adr/0003`). `supabase start` serves it; restart the stack after adding a function.
+- `../supabase/functions/invite-staff/` and `invite-customer/`: the invite functions, the only places
+  an account is created (`docs/adr/0003`). `supabase start` serves them; restart the stack after adding a function.
 - `scripts/seed.mjs`: the installation step that registers the first Task Master. Sign-up is closed
   (`docs/adr/0003`), so the app never creates an account.
 - `tests/`: see below.
@@ -64,6 +69,7 @@ assert on policy text or table layout, and the interface has no browser tests (s
 const me = await signInAs(uniqueEmail('staff'), { staff: {} });      // a Staff member
 const taskMaster = await signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
 const stranger = await signInAs(uniqueEmail('stranger'));            // signed in, not registered
+const customer = await customerOf(owner, task);                      // a new Customer, added to `task` by `owner`
 const again = await signIn(email);                                   // an account that exists already
 ```
 

@@ -1,7 +1,7 @@
 <script>
-  // The Staff landing page: every Task, by status, and the ones the reader is part of. The layout follows
-  // the Overview prototype in the design system; its Organization and Activity views, and search,
-  // have nothing to show until Organizations (#7) and the Timeline (#5) exist.
+  // The Staff landing page: every Task, by status, the ones the reader is part of, and the ones of
+  // one Organization. The layout follows the Overview prototype in the design system; its
+  // Organization cards, its Activity view and search are not built yet.
   import Badge from '@ui/lib/Badge.svelte';
   import Button from '@ui/lib/Button.svelte';
   import Field from '@ui/lib/Field.svelte';
@@ -12,7 +12,7 @@
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
-  const blank = { title: '', description: '', due_date: '' };
+  const blank = { title: '', description: '', due_date: '', organization_id: '' };
 
   let status = $state('all');
   let view = $state('all');
@@ -21,6 +21,9 @@
   let panel = $state(false);
   let draft = $state({ ...blank });
   let busy = $state(false);
+  let organizations = $state([]); // every Organization, by name
+  let organization = $state(''); // the id chosen in "By Organization", or '' before one is chosen
+  let naming = $state(''); // the name of the Organization being created
 
   const statuses = $derived(
     ['all', 'open', 'in_progress', 'resolved', 'done', 'cancelled'].map((id) => ({
@@ -34,7 +37,7 @@
     { id: 'all', label: t('filter.allTasks') },
     { id: 'mine', label: t('overview.myTasks') },
   ]);
-  const listed = $derived(view === 'all' || view === 'mine');
+  const listed = $derived(view === 'all' || view === 'mine' || (view === 'organizations' && organization !== ''));
   const complete = $derived(Boolean(draft.title.trim() && draft.description.trim()));
 
   let asked = 0;
@@ -47,6 +50,7 @@
       .select('id, title, status, due_date, owner:staff!owner_id(name, email)')
       .order('id', { ascending: false });
     if (status !== 'all') query = query.eq('status', status);
+    if (view === 'organizations') query = query.eq('organization_id', organization);
     const { data, error } = await query;
     if (request !== asked) return; // a later choice of filter has already asked again
     problem = error ? 'common.error' : '';
@@ -59,6 +63,7 @@
       title: draft.title.trim(),
       description: draft.description.trim(),
       due_date: draft.due_date || null,
+      organization_id: draft.organization_id || null,
     });
     busy = false;
     if (error) {
@@ -70,6 +75,26 @@
     await refresh();
   }
 
+  async function loadOrganizations() {
+    const { data, error } = await supabase.from('organizations').select('id, name').order('name');
+    if (error) problem = 'common.error';
+    organizations = data ?? [];
+  }
+
+  async function createOrganization(event) {
+    event.preventDefault();
+    busy = true;
+    const { data, error } = await supabase.from('organizations').insert({ name: naming.trim() }).select('id').single();
+    busy = false;
+    // 23505: the database keeps names unique, whatever their capitals.
+    problem = error ? (error.code === '23505' ? 'organization.exists' : 'common.error') : '';
+    if (error) return;
+    naming = '';
+    await loadOrganizations();
+    organization = data.id;
+  }
+
+  loadOrganizations();
   $effect(() => {
     if (listed) refresh();
   });
@@ -89,7 +114,21 @@
 <main>
   {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
   <section class="panel">
-    <header><h1>{views.find((v) => v.id === view).label}</h1></header>
+    <header>
+      <h1>{views.find((v) => v.id === view).label}</h1>
+      {#if view === 'organizations'}
+        <select bind:value={organization} aria-label={t('organization.choose')}>
+          <option value="">{t('organization.choose')}</option>
+          {#each organizations as { id, name } (id)}
+            <option value={id}>{name}</option>
+          {/each}
+        </select>
+        <form onsubmit={createOrganization}>
+          <input maxlength="120" placeholder={t('organization.name')} aria-label={t('organization.name')} bind:value={naming} />
+          <Button type="submit" size="sm" icon="plus" label={t('organization.new')} disabled={busy || !naming.trim()} />
+        </form>
+      {/if}
+    </header>
     {#if listed && tasks.length}
       <ul>
         {#each tasks as task (task.id)}
@@ -120,6 +159,16 @@
       bind:value={draft.description}
     />
     <Field label={t('task.dueDate')} type="date" action={t('common.optional')} bind:value={draft.due_date} />
+    <label class="choice">
+      {t('task.organization')}
+      <select bind:value={draft.organization_id}>
+        <option value="">{t('new.orgNone')}</option>
+        {#each organizations as { id, name } (id)}
+          <option value={id}>{name}</option>
+        {/each}
+      </select>
+      <small>{t('new.orgHint')}</small>
+    </label>
     {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
   </div>
   {#snippet footer()}
@@ -176,8 +225,41 @@
     background: var(--c-surface);
   }
   .panel header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
     padding: var(--s-4) var(--s-5);
     border-bottom: 1px solid var(--c-border);
+  }
+  .panel header form {
+    display: flex;
+    gap: var(--s-2);
+    margin-left: auto;
+  }
+  .panel header input {
+    width: 240px;
+  }
+  select,
+  .panel header input {
+    height: 36px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 var(--s-2);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    color: var(--c-text);
+  }
+  .choice {
+    display: grid;
+    gap: 6px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+  .choice small {
+    color: var(--c-text-3);
+    font-weight: 400;
   }
   h1 {
     margin: 0;

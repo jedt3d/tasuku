@@ -184,4 +184,13 @@ export default {
   'task.noCollaborators': 'Nobody yet',
   'task.chooseStaff': 'Choose a Staff member',
   'task.removeCollaborator': 'Remove {name} from the Collaborators',
+  'event.removedCustomer': 'took {name} off this Task as Customer',
+  'task.removeCustomer': 'Take {name} off this Task',
+  'task.customerOrganization': 'Organization of the Customer',
+  'organization.new': 'New Organization',
+  'organization.name': 'Name of the Organization',
+  'organization.exists': 'An Organization with this name already exists.',
+  'organization.choose': 'Choose an Organization',
+  'task.customerHint': 'One Customer per Task. No email is sent: tell them they can sign in with a magic link.',
+  'organization.none': 'No Organization',
 };

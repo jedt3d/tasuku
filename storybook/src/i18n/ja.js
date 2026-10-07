@@ -186,4 +186,13 @@ export default {
   'task.noCollaborators': 'まだいません',
   'task.chooseStaff': 'スタッフを選択',
   'task.removeCollaborator': '{name} をコラボレーターから外す',
+  'event.removedCustomer': 'が {name} をこのタスクのカスタマーから外しました',
+  'task.removeCustomer': '{name} をこのタスクから外す',
+  'task.customerOrganization': 'カスタマーの組織',
+  'organization.new': '新規組織',
+  'organization.name': '組織名',
+  'organization.exists': '同じ名前の組織がすでにあります。',
+  'organization.choose': '組織を選択',
+  'task.customerHint': 'カスタマーは 1 タスクにつき 1 人。メールは送信されません。マジックリンクでサインインできることをご本人にお伝えください。',
+  'organization.none': '組織なし',
 };

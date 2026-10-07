@@ -104,9 +104,9 @@ flowchart TD
   isCust -->|"no"| none(["Sees nothing"]):::lred
   isCust -->|"yes"| cust["Customer<br/>Reads the Timeline, never a Thread<br/>Comments and attaches files<br/>Marks Done, Reopens a Resolved Task<br/>Cancels until it is Resolved"]:::blue
   isStaff -->|"yes"| isMaster{"Task Master?"}:::orange
-  isMaster -->|"yes"| master["Task Master<br/>Reads every Task, acts on any Task<br/>Adds Collaborators, reassigns the Owner<br/>Resolve, Done, Reopen, Cancel<br/>Deletes a comment, leaving a marker"]:::blue
+  isMaster -->|"yes"| master["Task Master<br/>Reads every Task, acts on any Task<br/>Adds Collaborators, chooses the Customer<br/>Reassigns the Owner<br/>Resolve, Done, Reopen, Cancel<br/>Deletes a comment, leaving a marker"]:::blue
   isMaster -->|"no"| isOwner{"Owner of<br/>this Task?"}:::orange
-  isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
+  isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Adds, replaces and removes the Customer<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
   isOwner -->|"no"| isCollab{"Collaborator<br/>on this Task?"}:::orange
   isCollab -->|"yes"| collab["Collaborator<br/>Reads every Task<br/>Comments, attaches files, edits details<br/>Cannot change the Owner, close or cancel<br/>Does not manage who is on the Task"]:::blue
   isCollab -->|"no"| reader["Other Staff<br/>Reads every Task, read-only"]:::blue

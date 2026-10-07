@@ -64,3 +64,21 @@ export const comment = (client, task, body = 'On it.') =>
 // Resolves to the API's answer, error included.
 export const addCollaborator = async (client, task, staff) =>
   client.from('task_collaborators').insert({ task_id: task.id, staff_id: await userId(staff) }).select();
+
+export const uniqueName = (name) => `${name} ${randomUUID().slice(0, 8)}`;
+
+// Creates an Organization as `client`. Resolves to the API's answer, error included.
+export const createOrganization = (client, name = uniqueName('Hospital')) =>
+  client.from('organizations').insert({ name }).select('id, name').single();
+
+// Adds `email` to `task` as its Customer, acting as `client`, through the invite function.
+// Resolves to the function's answer, error included.
+export const addCustomer = (client, task, email) =>
+  client.functions.invoke('invite-customer', { body: { task_id: task.id, email } });
+
+// Adds a new Customer to `task`, acting as `client`, and signs in as that Customer.
+export async function customerOf(client, task, email = uniqueEmail('customer')) {
+  const { error } = await addCustomer(client, task, email);
+  if (error) throw error;
+  return signIn(email);
+}

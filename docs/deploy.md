@@ -20,7 +20,7 @@ The plan and the issue originally said Cloudflare Pages. The deployed target is 
 - [ ] First Task Master seeded and signed in with a magic link on the deployed app
 - [ ] Mailgun SMTP configured (before real use)
 - [x] Decided: new sign-ups are closed (ADR 0003)
-- [ ] Supabase: invite function deployed (section 6)
+- [ ] Supabase: both invite functions deployed (section 6)
 - [ ] Supabase: "Allow new users to sign up" turned off, once the invite function is deployed
 - [ ] Supabase: sessions time-boxed to 7 days (section 7; needs the Pro plan)
 
@@ -102,15 +102,16 @@ Applied from the repo's migrations once #2 and #3 provide them, with the Supabas
 
    It creates the account and registers it as Staff with the Task Master flag; running it again changes nothing. Then sign in with a magic link on the deployed app. While the built-in sender is in use the address must be a member of the Supabase organization (section 3).
 
-## 6. The invite function (open)
+## 6. The invite functions (open)
 
-`supabase/functions/invite-staff` is the only place an account is created (ADR 0003). A Task Master calls it from the Staff page. Deploy it after the migrations, from the repository root:
+Two functions are the only places an account is created (ADR 0003). A Task Master calls `supabase/functions/invite-staff` from the Staff page. The Owner of a Task or a Task Master calls `supabase/functions/invite-customer` from the Task page; the database decides whether they may (`set_customer`), and the function creates an account only when the email has none. Deploy both after the migrations, from the repository root:
 
 ```bash
 supabase functions deploy invite-staff
+supabase functions deploy invite-customer
 ```
 
-It reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from the function's environment. The local stack supplies all three. On the cloud project, check that they are present under Edge Functions → Secrets before relying on it; this has not been tried yet. It sends no email: the Task Master tells the new Staff member, who then asks for a magic link on the sign-in page.
+They read `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from the function's environment. The local stack supplies all three. On the cloud project, check that they are present under Edge Functions → Secrets before relying on them; this has not been tried yet. Neither sends email: the person who added someone tells them, and they then ask for a magic link on the sign-in page.
 
 ## 7. Session length (open)
 

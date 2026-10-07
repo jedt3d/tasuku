@@ -186,4 +186,13 @@ export default {
   'task.noCollaborators': 'ยังไม่มี',
   'task.chooseStaff': 'เลือก Staff',
   'task.removeCollaborator': 'นำ {name} ออกจาก Collaborator',
+  'event.removedCustomer': 'นำ {name} ออกจากการเป็น Customer ของ Task นี้',
+  'task.removeCustomer': 'นำ {name} ออกจาก Task นี้',
+  'task.customerOrganization': 'Organization ของ Customer',
+  'organization.new': 'Organization ใหม่',
+  'organization.name': 'ชื่อ Organization',
+  'organization.exists': 'มี Organization ชื่อนี้อยู่แล้ว',
+  'organization.choose': 'เลือก Organization',
+  'task.customerHint': 'หนึ่ง Task มี Customer ได้คนเดียว ระบบไม่ส่งอีเมลแจ้ง โปรดบอกเขาว่าเข้าสู่ระบบด้วย magic link ได้แล้ว',
+  'organization.none': 'ไม่มี Organization',
 };

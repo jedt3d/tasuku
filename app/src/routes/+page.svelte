@@ -3,6 +3,7 @@
   import Field from '@ui/lib/Field.svelte';
   import Icon from '@ui/lib/Icon.svelte';
   import { t } from '@ui/i18n/index.svelte.js';
+  import CustomerHome from '#lib/CustomerHome.svelte';
   import Overview from '#lib/Overview.svelte';
   import { auth } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
@@ -32,6 +33,8 @@
 
 {#if auth.staff}
   <Overview />
+{:else if auth.customer}
+  <CustomerHome />
 {:else}
 <main>
   {#if auth.email}

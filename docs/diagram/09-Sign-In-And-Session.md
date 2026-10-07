@@ -90,8 +90,9 @@ sequenceDiagram
   opt First time a Customer is added to a Task
     Staff->>App: add Customer email to a Task
     App->>Fn: add this Customer
-    Fn->>Auth: create the account if the email is new
-    Fn->>DB: create the Customer, add to the Task
+    Fn->>DB: add to the Task, as the caller
+    DB-->>Fn: refused, done, or no account yet
+    Fn->>Auth: create the account if there is none, then add again
     DB->>Mail: added to a Task, link to the Task
     Mail-->>P: email with the Task link
   end
@@ -124,4 +125,5 @@ sequenceDiagram
 - The sign-in page tells a person that their email is not registered, instead of always saying "check your email" (decided in PR #17). It is not drawn.
 - At sign-in the language stored for the person always wins over the one the browser remembered (decided in PR #17). It is not drawn.
 - Magic link lifetime and rate limits are not described.
+- Adding a Customer is built (#7, `invite-customer`): the database decides whether the caller may, and the function creates an account only for an Owner or Task Master and only when the email has none. The email to the Customer is not sent yet (#10); the Task page asks Staff to tell them.
 - Installation seeding of the first Task Master (story 7) is a script run with the secret key (`app/scripts/seed.mjs`), not the invite function. The Task Master registering Staff emails (story 9) uses the invite function from #3. Both are separate flows, not drawn.
