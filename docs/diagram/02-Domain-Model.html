@@ -20,7 +20,7 @@
 </head>
 <body>
 <main>
-  <p class="legend">blue = work records, green = Staff side, grey = outside PSP or outside the product.</p>
+  <p class="legend">blue = work records, green = Staff side, grey = outside PSP or outside the product. Request is a later release, not in v1.</p>
   <div class="diagram" id="out"></div>
   <script type="text/plain" id="src">
 ---
@@ -101,15 +101,18 @@ classDiagram
   class Customer {
     +String email
   }
-  class Request
+  class Request {
+    <<later release>>
+  }
   class Task {
     +proposeClose()
   }
   class Staff {
     +readAnyTask()
+    +addCustomer(task, customer)
   }
   class TaskMaster {
-    +addCustomer(task, customer)
+    +registerStaff(email)
     +reassignOwner(task, staff)
   }
   class Issue {
@@ -117,11 +120,13 @@ classDiagram
   }
   Customer "1" --> "*" Request : reports
   Staff "1" --> "*" Request : assesses
-  Request "1" --> "0..1" Task : opens
+  Request "0..1" --> "0..1" Task : opens
   Task "*" --> "1" Staff : owner
-  Customer "*" --> "*" Task : added to
+  Task "*" --> "*" Staff : collaborators
+  Task "*" --> "0..1" Customer : customer
   Staff <|-- TaskMaster
-  note for Task "Owner = the one Staff member responsible. Only the Owner may propose closing."
+  note for Task "Owner and Collaborators may write on a Task. Only the Owner may propose closing. A Task needs no Request and no Customer."
+  note for Request "Not in v1. The agreed details are in spec #1, Out of scope."
   note for Issue "Dev work on Tasuku itself. Never a record inside the product."
   class Customer:::grey
   class Request:::blue
@@ -129,6 +134,7 @@ classDiagram
   class Staff:::green
   class TaskMaster:::green
   class Issue:::grey
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d

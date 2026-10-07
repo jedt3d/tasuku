@@ -64,7 +64,7 @@ A Staff member who administers Tasuku: decides which emails are Staff, runs the 
 _Avoid_: Admin, manager
 
 **Owner**:
-The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. Ownership passes to another Staff member only once they accept it.
+The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. An Owner can hand ownership to another Staff member, who must accept it first; a Task Master can reassign it without acceptance.
 _Avoid_: Assignee, primary, lead
 
 **Collaborator**:

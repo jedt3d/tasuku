@@ -91,16 +91,17 @@ flowchart TB
   end
   subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
     direction LR
-    requests["Requests"]:::blue
+    requests["Requests<br/>(later release)"]:::blue
     tasks["Tasks"]:::blue
   end
   subgraph dev["Development of Tasuku"]
     direction LR
     issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
   end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
+  outside -->|"reaches added Tasks<br/>(later: reports Requests)"| tasuku
   inside -->|"read every Task, work on Tasks"| tasuku
   dev -.->|"dev work on Tasuku itself"| tasuku
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d

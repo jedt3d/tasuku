@@ -20,7 +20,7 @@
 </head>
 <body>
 <main>
-  <p class="legend">green = done, blue = open step, yellow = before real use, orange = decision still to make. Arrows mean must finish before.</p>
+  <p class="legend">green = done, blue = open step, yellow = before real use. Arrows mean must finish before.</p>
   <div class="diagram" id="out"></div>
   <script type="text/plain" id="src">
 ---
@@ -101,17 +101,20 @@ config:
 flowchart LR
   cf["Cloudflare Worker<br/>and Custom Domain"]:::green
   auth["Supabase Auth<br/>URLs set"]:::green
+  decided["Decided: sign-up<br/>is closed (ADR 0003)"]:::green
   schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
   app["Build the app and<br/>deploy to the Worker"]:::blue
   seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
+  signup["Turn off new sign-ups<br/>invite function from #3 deployed"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
-  signup{"Disable new<br/>sign-ups?"}:::orange
   cf --> app
   auth --> seed
   schema --> seed
   app --> seed
+  decided --> signup
+  schema --> signup
   seed -.->|"before real use"| mailgun
-  seed --> signup
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d

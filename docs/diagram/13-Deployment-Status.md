@@ -1,6 +1,6 @@
 # 13-Deployment-Status
 
-Source: docs/deploy.md status checklist and sections 4-5. Colour key: green = done, blue = open step, yellow = before real use, orange = decision still to make. Arrows mean must finish before.
+Source: docs/deploy.md status checklist and sections 4-5. Colour key: green = done, blue = open step, yellow = before real use. Arrows mean must finish before.
 
 ```mermaid
 ---
@@ -81,17 +81,20 @@ config:
 flowchart LR
   cf["Cloudflare Worker<br/>and Custom Domain"]:::green
   auth["Supabase Auth<br/>URLs set"]:::green
+  decided["Decided: sign-up<br/>is closed (ADR 0003)"]:::green
   schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
   app["Build the app and<br/>deploy to the Worker"]:::blue
   seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
+  signup["Turn off new sign-ups<br/>invite function from #3 deployed"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
-  signup{"Disable new<br/>sign-ups?"}:::orange
   cf --> app
   auth --> seed
   schema --> seed
   app --> seed
+  decided --> signup
+  schema --> signup
   seed -.->|"before real use"| mailgun
-  seed --> signup
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -105,6 +108,6 @@ flowchart LR
 
 ## Gaps to confirm
 
-- deploy.md says the sign-up decision is made 'with #3 and #7'; the arrow from the seed step is the only ordering it gives (once the first Task Master exists).
+- Sign-ups can only be turned off once the invite function from #3 is deployed; before that nobody new could be added.
 - The first Task Master must be a Supabase organization member while the built-in email sender is in use (deploy.md section 3), so the seed step is also gated on that.
 - This diagram mirrors the checklist; when a box in deploy.md is ticked, its colour here changes to green.

@@ -1,6 +1,6 @@
 # 10-Authorization-Request-Path
 
-Source: ADR 0002, spec #1 section Task model (status changes). Colour key: blue = the app, violet = Supabase API and database function, green = Postgres with RLS, light red = refused. Hiding something in the UI is never a security measure.
+Source: ADR 0002, ADR 0003, spec #1 section Task model (status changes). Colour key: blue = the app, violet = Supabase API and database function, green = Postgres with RLS, light red = refused. Hiding something in the UI is never a security measure.
 
 ```mermaid
 ---
@@ -83,7 +83,7 @@ sequenceDiagram
   participant API as Supabase API
   participant DB as Postgres with RLS
   participant Fn as Status function
-  Note over App,DB: There is no server of our own in between (ADR 0002)
+  Note over App,DB: No server of our own in between (ADR 0002), except the invite function that creates accounts (ADR 0003)
   rect rgb(220, 225, 248)
     App->>API: read the Timeline of a Task
     API->>DB: query as the signed-in user

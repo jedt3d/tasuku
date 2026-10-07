@@ -1,6 +1,6 @@
 # 06-End-to-End-Flow
 
-Source: CONTEXT.md. Colour key: grey = Customer, green = Staff side (Staff, Task Master, Owner), orange = decision, blue = the Task being worked, light red = cancelled.
+Source: CONTEXT.md and spec #1 (GitHub issue). Colour key: grey = Customer, green = Staff side (Staff, Task Master, Owner), orange = decision, blue = the Task being worked, light red = cancelled, light blue frame = later release, not in v1.
 
 ```mermaid
 ---
@@ -79,17 +79,24 @@ config:
     curve: basis
 ---
 flowchart TD
-  start(["Customer needs support"]):::grey --> report["Customer<br/>reports a Request"]:::grey
-  report --> assess["Staff member<br/>assesses the Request"]:::green
-  assess --> accept{"Accept as work?"}:::orange
-  accept -->|"no"| cancel(["Request cancelled"]):::lred
-  accept -->|"yes"| open["Staff opens<br/>a Task"]:::green
+  subgraph later["Later release: Request (not in v1)"]
+    start(["Customer needs support"]):::grey --> report["Customer<br/>reports a Request"]:::grey
+    report --> assess["Staff member from the rotation<br/>assesses the Request"]:::green
+    assess --> accept{"Accept as work?"}:::orange
+    accept -->|"no"| cancel(["Request cancelled"]):::lred
+  end
+  direct(["Staff member has<br/>work to record"]):::green --> open["Staff member opens a Task<br/>and becomes its Owner"]:::green
+  accept -->|"yes, the reporter becomes<br/>the Task's Customer"| open
   open --> track["Task is tracked<br/>Owner is responsible"]:::blue
-  track -.->|"as needed"| tm["Task Master adds Customers<br/>or reassigns the Owner"]:::green
+  track -.->|"as needed"| tm["Staff add a Customer or Collaborators<br/>Task Master can reassign the Owner"]:::green
   tm -.-> track
-  track --> propose["Owner proposes<br/>closing the Task"]:::green
-  propose --> agree["Both sides agree<br/>it is finished"]:::blue
-  agree --> done(["Task finished"]):::grey
+  track --> propose["Owner proposes closing<br/>Task becomes Resolved"]:::green
+  propose --> answer{"Customer's answer"}:::orange
+  answer -->|"Reopen"| track
+  answer -->|"Done, or no answer<br/>for 48 hours"| done(["Task Done"]):::grey
+  track -.->|"no Customer:<br/>Owner closes alone"| done
+  style later fill:none,stroke:#4ba1f1,stroke-width:2px,color:#4ba1f1
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -103,7 +110,4 @@ flowchart TD
 
 ## Gaps to confirm
 
-- How the Customer who reported gets added to the Task (CONTEXT.md says only a Task Master adds Customers).
-- Who becomes the first Owner when a Task is opened.
-- What happens if the other side does not agree to close; the flow only shows the agreed path.
-- How a Customer sends a Request (channel).
+- None open. Who becomes Owner, how the reporter becomes the Customer and what happens when the Customer does not agree are settled in spec #1.
