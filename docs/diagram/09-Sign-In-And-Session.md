@@ -1,6 +1,6 @@
 # 09-Sign-In-And-Session
 
-Source: Spec #1 (GitHub issue) stories 1-8 and 25, SignInScreen in the Storybook. Colour key: blue = people and the app, violet = Supabase Auth, notes = rules. The alt block shows that what a person sees is decided after sign-in.
+Source: Spec #1 (GitHub issue) stories 1-8 and 25, ADR 0003, SignInScreen in the Storybook. Colour key: blue = people and the app, violet = Supabase Auth, notes = rules. The alt block shows that what a person sees is decided after sign-in.
 
 ```mermaid
 ---
@@ -82,19 +82,27 @@ sequenceDiagram
   participant Staff as Staff member
   participant P as Person signing in
   participant App as Tasuku app
+  participant Fn as Invite function
   participant Auth as Supabase Auth
   participant DB as Postgres with RLS
   participant Mail as Email sender
+  Note over Fn,Auth: Sign-up is closed. Only the invite function creates an account (ADR 0003)
   opt First time a Customer is added to a Task
     Staff->>App: add Customer email to a Task
-    App->>DB: create the Customer if the email is new
+    App->>Fn: add this Customer
+    Fn->>Auth: create the account if the email is new
+    Fn->>DB: create the Customer, add to the Task
     DB->>Mail: added to a Task, link to the Task
     Mail-->>P: email with the Task link
   end
   P->>App: enter email on the sign-in page
   App->>Auth: request a magic link
-  Auth->>Mail: send the magic link
-  Mail-->>P: email with the magic link
+  alt Email has an account
+    Auth->>Mail: send the magic link
+    Mail-->>P: email with the magic link
+  else No account
+    Auth-->>App: nothing is sent
+  end
   P->>Auth: click the link
   Auth-->>App: session
   Note over Auth,App: Staff session 30 days, Customer session 7 days
@@ -103,7 +111,7 @@ sequenceDiagram
     DB-->>App: every Task, write only on own Tasks
   else Email is a Customer on a Task
     DB-->>App: only their Tasks, Timeline only
-  else Neither
+  else Neither, for example Staff who were removed
     DB-->>App: nothing
   end
   Note over P,App: Session expired: ask for a new magic link
@@ -113,5 +121,6 @@ sequenceDiagram
 
 - How the session length differs between Staff and Customer is not described (spec #1 gives only the two durations).
 - What a person with no access sees (an empty page or a message) is not decided.
+- Whether the sign-in page tells a person that their email has no account, or always says "check your email", is not decided.
 - Magic link lifetime and rate limits are not described.
-- Installation seeding of the first Task Master (story 7) and the Task Master registering Staff emails (story 9) are separate flows, not drawn.
+- Installation seeding of the first Task Master (story 7) and the Task Master registering Staff emails (story 9) use the same invite function; they are separate flows, not drawn.

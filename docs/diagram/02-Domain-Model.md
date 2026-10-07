@@ -1,6 +1,6 @@
 # 02-Domain-Model
 
-Source: CONTEXT.md. Colour key: blue = work records, green = Staff side, grey = outside PSP or outside the product.
+Source: CONTEXT.md and spec #1 (GitHub issue). Colour key: blue = work records, green = Staff side, grey = outside PSP or outside the product. Request is a later release, not in v1.
 
 ```mermaid
 ---
@@ -81,15 +81,18 @@ classDiagram
   class Customer {
     +String email
   }
-  class Request
+  class Request {
+    <<later release>>
+  }
   class Task {
     +proposeClose()
   }
   class Staff {
     +readAnyTask()
+    +addCustomer(task, customer)
   }
   class TaskMaster {
-    +addCustomer(task, customer)
+    +registerStaff(email)
     +reassignOwner(task, staff)
   }
   class Issue {
@@ -97,11 +100,13 @@ classDiagram
   }
   Customer "1" --> "*" Request : reports
   Staff "1" --> "*" Request : assesses
-  Request "1" --> "0..1" Task : opens
+  Request "0..1" --> "0..1" Task : opens
   Task "*" --> "1" Staff : owner
-  Customer "*" --> "*" Task : added to
+  Task "*" --> "*" Staff : collaborators
+  Task "*" --> "0..1" Customer : customer
   Staff <|-- TaskMaster
-  note for Task "Owner = the one Staff member responsible. Only the Owner may propose closing."
+  note for Task "Owner and Collaborators may write on a Task. Only the Owner may propose closing. A Task needs no Request and no Customer."
+  note for Request "Not in v1. The agreed details are in spec #1, Out of scope."
   note for Issue "Dev work on Tasuku itself. Never a record inside the product."
   class Customer:::grey
   class Request:::blue
@@ -109,6 +114,7 @@ classDiagram
   class Staff:::green
   class TaskMaster:::green
   class Issue:::grey
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -122,7 +128,5 @@ classDiagram
 
 ## Gaps to confirm
 
-- Can a Task exist without a Request (internal work)? Can one Request lead to more than one Task?
-- "Write access is granted on a Task": who holds it is not spelled out, so it is not drawn.
-- Can a Task Master also be the Owner of a Task?
-- Method names (readAnyTask, addCustomer, reassignOwner, proposeClose) are working labels for the rules in CONTEXT.md.
+- Can one Request lead to more than one Task? Not decided; it belongs to the later release that adds Requests.
+- Method names (readAnyTask, addCustomer, registerStaff, reassignOwner, proposeClose) are working labels for the rules in CONTEXT.md and spec #1.

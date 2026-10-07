@@ -1,6 +1,6 @@
 # 03-Request-Lifecycle
 
-Source: CONTEXT.md. Colour key: yellow = waiting for assessment, green = became a Task, light red = cancelled.
+Source: CONTEXT.md and spec #1 (GitHub issue), Out of scope. Colour key: yellow = waiting for assessment, green = became a Task, light red = cancelled. Request is a later release, not in v1.
 
 ```mermaid
 ---
@@ -81,15 +81,17 @@ config:
 stateDiagram-v2
   direction LR
   state "Task opened" as TaskOpened
-  [*] --> Reported : Customer reports
-  Reported --> TaskOpened : Staff assesses, opens a Task
-  Reported --> Cancelled : Staff assesses, cancels
+  [*] --> Reported : Customer verifies an email and submits on the public page
+  Reported --> TaskOpened : Staff member from the rotation accepts
+  Reported --> Cancelled : Staff member cancels, or Customer withdraws
   TaskOpened --> [*]
   Cancelled --> [*]
-  note right of TaskOpened : continues as a Task, see 04-Task-Lifecycle
+  note right of TaskOpened : continues as a Task with the reporter as its Customer, see 04-Task-Lifecycle
+  note left of Reported : Later release, not in v1
   class Reported yellow
   class TaskOpened green
   class Cancelled lred
+
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -103,7 +105,6 @@ stateDiagram-v2
 
 ## Gaps to confirm
 
-- Who may assess and cancel: any Staff member, or only some?
-- Is the Customer told when a Request is cancelled? Can a Customer withdraw a Request?
-- How does a Customer send a Request (which channel)?
+- Is the Customer told when a Request is cancelled? Not decided.
 - State name "Reported" is a working label; CONTEXT.md only says "not yet accepted as work".
+- Sign-up is closed (ADR 0003), so how a stranger gets an account in order to submit a Request has to be designed with this release.

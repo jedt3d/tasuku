@@ -63,8 +63,8 @@ If nothing in the list appears in the table below, say so in one line and stop. 
 
 | Changed file | Check these diagrams |
 |---|---|
-| `CONTEXT.md` | `01`, `02`, `04`, `05`, `11` |
-| `docs/adr/*` | `07`, `10` |
+| `CONTEXT.md` | `01`, `02`, `03`, `04`, `06`, `11` |
+| `docs/adr/*` | `07`, `09`, `10`, `13` |
 | Spec #1 (`gh issue view 1`) or a later spec issue | `04`, `08`, `09`, `10`, `11`, `v1-plan` |
 | `storybook/src/screens/*`, `storybook/src/lib/mock.js`, `storybook/src/i18n/en.js` (status, event, role keys) | `04`, `11`, and any screen map |
 | `supabase/` migrations or policies, when they exist | `08`, `10`, `11` |

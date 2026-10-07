@@ -19,7 +19,8 @@ The plan and the issue originally said Cloudflare Pages. The deployed target is 
 - [ ] App built from the repo and deployed to the Worker
 - [ ] First Task Master seeded and signed in with a magic link on the deployed app
 - [ ] Mailgun SMTP configured (before real use)
-- [ ] Decide whether to disable new sign-ups (see below)
+- [x] Decided: new sign-ups are closed (ADR 0003)
+- [ ] Supabase: "Allow new users to sign up" turned off, once the invite function from #3 is deployed
 
 ## 1. Cloudflare Worker and domain
 
@@ -86,6 +87,8 @@ Applied from the repo's migrations once #2 and #3 provide them, with the Supabas
 3. `npx wrangler deploy`.
 4. Seed the first Task Master as a registered user (method to be written when #2 defines the seed), then sign in with a magic link on the deployed app.
 
-## Open decision
+## Sign-up is closed
 
-Whether to turn off "Allow new users to sign up" once the first Task Master exists. RLS already lets an unregistered signed-in email read nothing; disabling sign-up adds a second layer but changes how Staff and Customers are onboarded, so it is decided with #3 and #7.
+Decided in [ADR 0003](adr/0003-sign-up-is-closed.md): "Allow new users to sign up" is turned off, and accounts are created only by the invite function (a Supabase Edge Function) when a Task Master registers a Staff member or a Staff member adds a Customer to a Task. The function holds the secret key; the browser never does.
+
+Order matters: deploy the invite function with #3 first, then turn the setting off. Turned off earlier, nobody new could be added. The first Task Master is created by the seed step, not through the app.
