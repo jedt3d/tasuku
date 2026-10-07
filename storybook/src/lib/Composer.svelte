@@ -1,10 +1,11 @@
 <script>
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
+  import { t } from '../i18n/index.svelte.js';
 
   // Writes a comment on the Timeline. Attaching a file is part of writing a comment.
   let {
-    placeholder = 'Write a comment…',
+    placeholder,
     value = $bindable(''),
     disabled = false,
     disabledReason = '',
@@ -16,14 +17,13 @@
   {#if disabled}
     <p class="locked"><Icon name="lock" size={15} /> {disabledReason}</p>
   {:else}
-    <textarea rows="2" {placeholder} bind:value></textarea>
+    <textarea rows="2" placeholder={placeholder ?? t('composer.placeholder')} bind:value></textarea>
     <div class="bar">
-      <button class="attach" aria-label="Attach an image or PDF"><Icon name="paperclip" /></button>
+      <button class="attach" aria-label={t('composer.attach')}><Icon name="paperclip" /></button>
       <span class="warn"
-        ><Icon name="warning" size={14} /> Images and PDF up to 10 MB. Never attach patient
-        information.</span
+        ><Icon name="warning" size={14} /> {t('composer.warning')}</span
       >
-      <Button variant="primary" size="sm" icon="send" label="Send" onclick={() => onsend?.(value)} />
+      <Button variant="primary" size="sm" icon="send" label={t('common.send')} onclick={() => onsend?.(value)} />
     </div>
   {/if}
 </div>

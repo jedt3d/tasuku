@@ -2,8 +2,10 @@
   import Avatar from './Avatar.svelte';
   import Badge from './Badge.svelte';
   import Icon from './Icon.svelte';
+  import { formatDateTime, t } from '../i18n/index.svelte.js';
 
-  // entries: { kind: 'comment' | 'event' | 'deleted' | 'more', threads?: [...] }
+  // entries: { kind: 'comment' | 'event' | 'deleted' | 'more', at, threads?: [...] }
+  // Events carry a message key, not text, so they read in the viewer's language.
   // A Thread hangs off the entry it was started from. Customers never receive Threads.
   // actions: the viewer may write on this Task, so entries offer "Start Thread".
   let { entries = [], viewer = 'staff', cards = false, actions = false, onthread } = $props();
@@ -14,7 +16,7 @@
 {#snippet tools(entry)}
   {#if staffView && actions}
     <span class="tools">
-      <button class="tool" onclick={() => onthread?.(entry)}><Icon name="thread" size={14} />Start Thread</button>
+      <button class="tool" onclick={() => onthread?.(entry)}><Icon name="thread" size={14} />{t('timeline.startThread')}</button>
     </span>
   {/if}
 {/snippet}
@@ -36,9 +38,9 @@
         {#if entry.kind === 'comment'}
           <div class="head">
             <strong>{entry.author}</strong>
-            {#if entry.role}<span class="role">{entry.role}</span>{/if}
-            <time>{entry.time}</time>
-            {#if entry.edited}<span class="muted">· edited</span>{/if}
+            {#if entry.role}<span class="role">{t(`role.${entry.role}`)}</span>{/if}
+            <time>{formatDateTime(entry.at)}</time>
+            {#if entry.edited}<span class="muted">· {t('timeline.edited')}</span>{/if}
             {@render tools(entry)}
           </div>
           <div class="bubble">
@@ -60,22 +62,22 @@
         {:else if entry.kind === 'event'}
           <p class="line">
             <strong>{entry.actor}</strong>
-            {entry.text}
+            {t(entry.key, entry.vars)}
             {#if entry.status}<Badge status={entry.status} />{/if}
-            <time>{entry.time}</time>
+            <time>{formatDateTime(entry.at)}</time>
             {@render tools(entry)}
           </p>
         {:else if entry.kind === 'deleted'}
-          <p class="line muted">A comment was removed by a Task Master <time>{entry.time}</time></p>
+          <p class="line muted">{t('timeline.deleted')} <time>{formatDateTime(entry.at)}</time></p>
         {:else if entry.kind === 'more'}
-          <button class="morebtn">View {entry.count} earlier entries</button>
+          <button class="morebtn">{t('timeline.earlier', { n: entry.count })}</button>
         {/if}
 
         {#if staffView && entry.threads}
           {#each entry.threads as thread (thread.title)}
             <section class="threadbox" aria-label="Thread: {thread.title}">
               <header>
-                <span class="tlabel"><Icon name="lock" size={13} /> Thread · Staff only</span>
+                <span class="tlabel"><Icon name="lock" size={13} /> {t('thread.label')}</span>
                 <strong>{thread.title}</strong>
                 <Badge status={thread.status} />
                 <span class="resp"><Avatar name={thread.responsible} size={22} />{thread.responsible}</span>
@@ -84,16 +86,16 @@
                 <div class="reply">
                   <Avatar name={message.author} size={26} />
                   <div>
-                    <span class="rhead"><strong>{message.author}</strong><time>{message.time}</time></span>
+                    <span class="rhead"><strong>{message.author}</strong><time>{formatDateTime(message.at)}</time></span>
                     <p>{message.text}</p>
                   </div>
                 </div>
               {/each}
-              {#if thread.more}<button class="morebtn">View {thread.more} more replies</button>{/if}
+              {#if thread.more}<button class="morebtn">{t('thread.moreReplies', { n: thread.more })}</button>{/if}
               {#if actions && thread.status === 'open'}
                 <div class="treply">
-                  <input placeholder="Reply in this Thread…" aria-label="Reply in this Thread" />
-                  <button class="tool">Mark Settled</button>
+                  <input placeholder={t('thread.reply')} aria-label={t('thread.reply')} />
+                  <button class="tool">{t('thread.settle')}</button>
                 </div>
               {/if}
             </section>
@@ -155,6 +157,7 @@
     min-height: 22px;
   }
   .role {
+    font-family: var(--font-display);
     padding: 0 7px;
     border-radius: var(--r-pill);
     background: var(--c-slate-bg);
@@ -252,7 +255,7 @@
     border: 1px solid var(--c-border);
     border-radius: 7px;
     background: var(--c-surface);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-xs);
     font-weight: 600;
     white-space: nowrap;
@@ -268,7 +271,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-weight: 500;
     cursor: pointer;
   }
@@ -281,7 +284,7 @@
     padding: 12px 14px;
     border: 1px dashed var(--c-primary-border);
     border-radius: var(--r-lg);
-    background: #fbfaff;
+    background: var(--c-primary-faint);
   }
   /* The branch: an elbow from the Timeline's line into the Thread. */
   .threadbox::before {
@@ -305,7 +308,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-xs);
     font-weight: 600;
   }

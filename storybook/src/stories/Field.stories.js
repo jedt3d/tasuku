@@ -5,7 +5,7 @@ export default {
   component: Field,
   args: { label: 'Title', placeholder: 'What needs to be done?' },
   argTypes: { type: { control: 'select', options: ['text', 'email', 'date', 'select', 'textarea'] } },
-  parameters: { layout: 'centered' },
+  parameters: { layout: 'centered', notes: 'field' },
 };
 
 export const Text = {};

@@ -1,7 +1,7 @@
 import Button from '../lib/Button.svelte';
 
 export default {
-  title: 'Components/Button',
+  title: 'Components/Button', parameters: { notes: 'button' },
   component: Button,
   args: { label: 'Mark Resolved' },
   argTypes: {

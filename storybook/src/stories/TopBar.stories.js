@@ -1,6 +1,6 @@
 import TopBar from '../lib/TopBar.svelte';
 
-export default { title: 'Components/TopBar', component: TopBar, parameters: { layout: 'fullscreen' } };
+export default { title: 'Components/TopBar', component: TopBar, parameters: { layout: 'fullscreen', notes: 'topbar' } };
 
 export const Staff = {};
 export const Customer = { args: { minimal: true, user: 'Dr. Ploy Suwan' } };

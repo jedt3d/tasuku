@@ -45,7 +45,7 @@
     padding: 0 6px;
     border-radius: var(--r-pill);
     background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-xs);
     font-weight: 600;
     text-align: center;
@@ -64,7 +64,7 @@
   }
   .pill button.active {
     background: var(--c-surface);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     box-shadow: var(--shadow-sm);
   }
 
@@ -80,7 +80,7 @@
     color: var(--c-text-3);
   }
   .underline button.active {
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     border-bottom-color: var(--c-primary);
   }
 </style>

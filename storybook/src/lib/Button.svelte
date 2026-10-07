@@ -49,7 +49,7 @@
   }
   .primary {
     background: var(--c-primary);
-    color: #fff;
+    color: var(--c-on-primary);
     box-shadow: var(--shadow-sm);
   }
   .primary:hover:not(:disabled) {
@@ -65,14 +65,14 @@
   }
   .soft {
     background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
   }
   .soft:hover:not(:disabled) {
     border-color: var(--c-primary-border);
   }
   .ghost {
     background: transparent;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     padding: 0 8px;
   }
   .ghost:hover:not(:disabled) {
@@ -80,7 +80,7 @@
   }
   .danger {
     background: var(--c-surface);
-    border-color: #f3b9b9;
+    border-color: var(--c-red-border);
     color: var(--c-red-fg);
   }
   .danger:hover:not(:disabled) {

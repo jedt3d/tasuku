@@ -42,6 +42,7 @@
     gap: 6px;
   }
   .lbl {
+    font-family: var(--font-display);
     display: flex;
     justify-content: space-between;
     font-size: var(--fs-sm);
@@ -49,7 +50,7 @@
     color: var(--c-text);
   }
   .action {
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-weight: 500;
   }
   .control {

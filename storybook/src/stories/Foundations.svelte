@@ -5,7 +5,7 @@
   let { section = 'colors' } = $props();
 
   const neutrals = ['bg', 'surface', 'surface-2', 'border', 'border-strong', 'text-3', 'text-2', 'text'];
-  const brand = ['primary', 'primary-hover', 'primary-soft', 'primary-border'];
+  const brand = ['primary', 'primary-hover', 'primary-text', 'primary-soft', 'primary-faint', 'primary-border'];
   const tones = ['slate', 'blue', 'amber', 'green', 'red', 'violet'];
   const sizes = ['2xl', 'xl', 'lg', 'md', 'sm', 'xs'];
   const radii = ['sm', 'md', 'lg', 'xl', 'pill'];
@@ -37,13 +37,34 @@
     {/each}
   </div>
 {:else if section === 'type'}
+  <h2>Two roles</h2>
+  <div class="roles">
+    <div class="role">
+      <code>--font-text</code>
+      <p style="font-family:var(--font-text)">
+        ตัวอักษรไทยแบบมีหัว สำหรับข้อความที่ต้องอ่านหรือพิมพ์ยาว ๆ เช่น comment และรายละเอียดของ Task
+        ผู้ใช้แยกตัว ถ ภ ฎ ฏ ด ต ค ศ ออกจากกันได้ทันที
+      </p>
+      <p style="font-family:var(--font-text)">Text you read at length · 長く読む文章のための書体</p>
+    </div>
+    <div class="role">
+      <code>--font-display</code>
+      <p style="font-family:var(--font-display);font-weight:600">
+        ตัวอักษรไทยแบบไม่มีหัว สำหรับหัวข้อ ปุ่ม และ label สั้น ๆ: ถ ภ ฎ ฏ ด ต ค ศ
+      </p>
+      <p style="font-family:var(--font-display);font-weight:600">Titles, buttons, labels · 見出し・ボタン・ラベル</p>
+    </div>
+  </div>
   <h2>Type scale</h2>
-  <p>Inter for Latin, Noto Sans Thai for Thai, the system face for Japanese.</p>
   {#each sizes as size (size)}
     <div class="type">
       <code>--fs-{size}</code>
-      <span style="font-size:var(--fs-{size});font-weight:{size.includes('xl') ? 700 : 400}"
-        >Task opened · เปิด Task แล้ว · タスクを開きました</span
+      <span
+        style="font-size:var(--fs-{size});font-weight:{size.includes('xl') ? 700 : 400};font-family:var(--font-{size.includes(
+          'xl',
+        )
+          ? 'display'
+          : 'text'})">Task opened · เปิด Task แล้ว · タスクを開きました</span
       >
     </div>
   {/each}
@@ -123,6 +144,22 @@
     gap: 16px;
     padding: 8px 0;
     border-bottom: 1px solid var(--c-border);
+  }
+  .roles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .role {
+    padding: 16px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+  }
+  .role p {
+    margin: 8px 0 0;
+    color: var(--c-text);
+    font-size: var(--fs-lg);
   }
   .bar {
     height: 16px;

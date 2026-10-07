@@ -1,7 +1,13 @@
-/* Tasuku design tokens. Every component reads these; nothing hard-codes a colour. */
+/* Tasuku design tokens. Every component reads these; nothing hard-codes a colour.
+   The light theme is the default. The dark theme follows One Dark: slate greys, never pure black. */
 :root {
-  --font-sans: 'Inter', 'Noto Sans Thai', 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', system-ui,
-    -apple-system, 'Segoe UI', sans-serif;
+  /* Two font roles. Text is anything read or typed at length; display is titles, buttons, labels.
+     Thai uses a looped face for text and a loopless one for display. See Foundations/Typography. */
+  --font-text: 'Inter', 'Noto Sans Thai Looped', 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-display: 'Inter', 'Noto Sans Thai', 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --lh: 1.5;
 
   --c-bg: #f4f5f9;
   --c-surface: #ffffff;
@@ -14,7 +20,11 @@
 
   --c-primary: #5650f0;
   --c-primary-hover: #453ed6;
+  --c-on-primary: #ffffff;
+  /* Indigo used as text or an icon on a surface: links, ghost buttons, the active tab. */
+  --c-primary-text: #453ed6;
   --c-primary-soft: #eeedfe;
+  --c-primary-faint: #fbfaff;
   --c-primary-border: #cfccfb;
 
   /* Tone pairs: tinted background + readable foreground. */
@@ -28,8 +38,14 @@
   --c-green-fg: #137a4b;
   --c-red-bg: #ffe3e3;
   --c-red-fg: #c92a2a;
+  --c-red-border: #f3b9b9;
   --c-violet-bg: #f1e7fd;
   --c-violet-fg: #7a35c4;
+
+  /* Solid marks on a chart. */
+  --c-dot: #c3c8d4;
+  --c-dot-green: #2e9e6b;
+  --c-dot-amber: #e2a23a;
 
   --r-sm: 6px;
   --r-md: 10px;
@@ -57,6 +73,54 @@
   --s-8: 32px;
 }
 
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-bg: #21252b;
+  --c-surface: #282c34;
+  --c-surface-2: #2f343e;
+  --c-border: #3b4048;
+  --c-border-strong: #4f5666;
+  --c-text: #e2e5eb;
+  --c-text-2: #b4bbc8;
+  --c-text-3: #969dad;
+
+  --c-primary: #6660f2;
+  --c-primary-hover: #7771f5;
+  --c-on-primary: #ffffff;
+  --c-primary-text: #aeabff;
+  --c-primary-soft: #34355e;
+  --c-primary-faint: #2c2e45;
+  --c-primary-border: #4d4f8f;
+
+  --c-slate-bg: #3a404b;
+  --c-slate-fg: #c8ccd4;
+  --c-blue-bg: #1e3a57;
+  --c-blue-fg: #61afef;
+  --c-amber-bg: #4a3d1e;
+  --c-amber-fg: #e5c07b;
+  --c-green-bg: #29402c;
+  --c-green-fg: #98c379;
+  --c-red-bg: #4f2b31;
+  --c-red-fg: #f0868f;
+  --c-red-border: #7a3e45;
+  --c-violet-bg: #40305a;
+  --c-violet-fg: #d08fe6;
+
+  --c-dot: #5c6370;
+  --c-dot-green: #98c379;
+  --c-dot-amber: #e5c07b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* Thai carries vowels and tone marks above and below the line, so it needs taller lines. */
+:lang(th) {
+  --lh: 1.7;
+}
+
 *,
 *::before,
 *::after {
@@ -65,9 +129,9 @@
 
 body {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-text);
   font-size: var(--fs-md);
-  line-height: 1.5;
+  line-height: var(--lh);
   color: var(--c-text);
   background: var(--c-bg);
   -webkit-font-smoothing: antialiased;
@@ -79,6 +143,16 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+
+/* Titles and controls are short: display face. Whatever is typed keeps the text face. */
+h1,
+h2,
+h3,
+h4,
+button,
+summary {
+  font-family: var(--font-display);
 }
 
 :focus-visible {

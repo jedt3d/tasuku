@@ -3,7 +3,7 @@ import ActivityLogDemo from './ActivityLogDemo.svelte';
 import { task } from '../lib/mock.js';
 
 export default {
-  title: 'Components/Timeline',
+  title: 'Components/Timeline', parameters: { notes: 'timeline' },
   component: Timeline,
   args: { entries: task.timeline },
   argTypes: { viewer: { control: 'inline-radio', options: ['staff', 'customer'] } },

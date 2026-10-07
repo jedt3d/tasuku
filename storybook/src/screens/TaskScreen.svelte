@@ -9,18 +9,19 @@
   import Tabs from '../lib/Tabs.svelte';
   import Timeline from '../lib/Timeline.svelte';
   import TopBar from '../lib/TopBar.svelte';
+  import { formatDate, t } from '../i18n/index.svelte.js';
   import { customer, resolvedEvent, staff, task } from '../lib/mock.js';
 
   // role: owner | collaborator | reader (Staff not on this Task) | taskmaster
   let { status = 'in_progress', role = 'owner' } = $props();
 
   let filter = $state('all');
-  const filters = [
-    { id: 'all', label: 'All' },
-    { id: 'comments', label: 'Comments' },
-    { id: 'events', label: 'Events' },
-    { id: 'threads', label: 'Threads', count: 2 },
-  ];
+  const filters = $derived([
+    { id: 'all', label: t('filter.all') },
+    { id: 'comments', label: t('filter.comments') },
+    { id: 'events', label: t('filter.events') },
+    { id: 'threads', label: t('filter.threads'), count: 2 },
+  ]);
   const matches = {
     comments: (e) => e.kind === 'comment',
     events: (e) => e.kind === 'event' || e.kind === 'deleted',
@@ -35,6 +36,7 @@
   const viewer = $derived(
     { owner: staff.owner, collaborator: staff.nicha, reader: 'Arthit Boonmee', taskmaster: staff.master }[role],
   );
+  const due = $derived(formatDate(task.due, { day: 'numeric', month: 'short', year: 'numeric' }));
 </script>
 
 <div class="app">
@@ -43,7 +45,7 @@
   <div class="tabstrip">
     <span class="doctab active">{task.id} {task.title}<Icon name="x" size={14} /></span>
     <span class="doctab">#1038 Fax images arrive solid black</span>
-    <button class="newtab">New Task <Icon name="plus" size={16} /></button>
+    <button class="newtab">{t('common.newTask')} <Icon name="plus" size={16} /></button>
   </div>
 
   <div class="sheet">
@@ -52,26 +54,26 @@
         <Avatar name={task.organization} size={44} />
         <div>
           <strong>{task.organization}</strong>
-          <span>Customer · {customer.name}</span>
+          <span>{t('task.customerOf', { name: customer.name })}</span>
         </div>
       </div>
-      <div class="meta"><span class="k">Due</span><span>{task.due}</span></div>
-      <div class="meta"><Badge {status} /><span>Task {task.id}</span></div>
+      <div class="meta"><span class="k">{t('task.due')}</span><span>{due}</span></div>
+      <div class="meta"><Badge {status} /><span>{t('task.number', { id: task.id })}</span></div>
 
       <!-- One slot, by what the viewer may do: close the Task, or be told they cannot. -->
       <div class="actions">
         {#if !canWrite}
-          <Badge tone="slate" label="Read-only · you are not on this Task" dot={false} />
+          <Badge tone="slate" label={t('task.readOnly')} dot={false} />
         {:else if status === 'resolved'}
           {#if isMaster}
-            <Button icon="reopen" label="Reopen" />
-            <Button variant="primary" icon="checkCircle" label="Confirm Done" />
+            <Button icon="reopen" label={t('task.reopen')} />
+            <Button variant="primary" icon="checkCircle" label={t('task.confirmDone')} />
           {:else}
-            <Badge tone="amber" label="Waiting for the Customer" />
+            <Badge tone="amber" label={t('task.waitingCustomer')} />
           {/if}
         {:else if canClose}
-          <Button variant="danger" icon="ban" label="Cancel Task" />
-          <Button variant="primary" icon="checkCircle" label="Mark Resolved" />
+          <Button variant="danger" icon="ban" label={t('task.cancel')} />
+          <Button variant="primary" icon="checkCircle" label={t('task.markResolved')} />
         {/if}
       </div>
     </header>
@@ -80,8 +82,8 @@
       <p class="banner">
         <Icon name="clock" size={16} />
         <span
-          ><strong>Awaiting the Customer's confirmation.</strong> {customer.name} can mark this Done or
-          Reopen it. Closes automatically in 31 h.</span
+          ><strong>{t('task.awaitingTitle')}</strong>
+          {t('task.awaitingBody', { name: customer.name, hours: 31 })}</span
         >
       </p>
     {/if}
@@ -90,15 +92,15 @@
       <aside class="people">
         <section>
           <h3>
-            Owner
-            {#if isMaster}<button class="act" aria-label="Reassign Owner"><Icon name="swap" size={14} />Reassign</button>{/if}
+            {t('task.owner')}
+            {#if isMaster}<button class="act" aria-label={t('task.reassignOwner')}><Icon name="swap" size={14} />{t('task.reassign')}</button>{/if}
           </h3>
           <div class="person"><Avatar name={staff.owner} size={32} /><span>{staff.owner}</span></div>
         </section>
         <section>
           <h3>
-            Collaborators
-            {#if canClose}<button class="act" aria-label="Add Collaborator"><Icon name="plus" size={14} />Add</button>{/if}
+            {t('task.collaborators')}
+            {#if canClose}<button class="act" aria-label={t('task.addCollaborator')}><Icon name="plus" size={14} />{t('common.add')}</button>{/if}
           </h3>
           {#each task.collaborators as name (name)}
             <div class="person"><Avatar {name} size={32} /><span>{name}</span></div>
@@ -106,20 +108,20 @@
         </section>
         <section>
           <h3>
-            Customer
-            {#if canWrite}<button class="act" aria-label="Change Customer"><Icon name="edit" size={14} />Change</button>{/if}
+            {t('task.customer')}
+            {#if canWrite}<button class="act" aria-label={t('task.changeCustomer')}><Icon name="edit" size={14} />{t('common.change')}</button>{/if}
           </h3>
           <div class="person">
             <Avatar name={customer.name} size={32} />
             <span>{customer.name}<small>{customer.email}</small></span>
           </div>
         </section>
-        <Field label="Organization" type="select" options={[task.organization]} icon="building" />
-        <Field label="Due date" value={task.due} icon="calendar" />
+        <Field label={t('task.organization')} type="select" options={[task.organization]} icon="building" />
+        <Field label={t('task.dueDate')} value={due} icon="calendar" />
         <section>
           <h3>
-            Related
-            {#if canWrite}<button class="act" aria-label="New Task that refers to this one"><Icon name="plus" size={14} />New Task</button>{/if}
+            {t('task.related')}
+            {#if canWrite}<button class="act" aria-label={t('task.newRelated')}><Icon name="plus" size={14} />{t('common.newTask')}</button>{/if}
           </h3>
           <a class="ref" href="#ref"><Icon name="link" size={15} />{task.refersTo}</a>
         </section>
@@ -128,20 +130,17 @@
       <main class="center">
         <div class="titlebar">
           <h1>{task.title}</h1>
-          <span class="via">Opened by {staff.owner}</span>
+          <span class="via">{t('task.openedBy', { name: staff.owner })}</span>
         </div>
         <div class="tools">
-          <h2><Icon name="activity" size={18} /> Timeline</h2>
+          <h2><Icon name="activity" size={18} /> {t('timeline.title')}</h2>
           <Tabs items={filters} bind:active={filter} />
         </div>
         <div class="scroll">
           <Timeline {entries} actions={canWrite} />
         </div>
         <div class="dock">
-          <Composer
-            disabled={!canWrite}
-            disabledReason="Only the Owner and Collaborators can comment on this Task."
-          />
+          <Composer disabled={!canWrite} disabledReason={t('composer.locked')} />
         </div>
       </main>
     </div>
@@ -190,7 +189,7 @@
     padding: 0 14px;
     border: 0;
     background: none;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
@@ -290,7 +289,7 @@
     border: 0;
     border-radius: 7px;
     background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-xs);
     font-weight: 600;
     cursor: pointer;
@@ -321,7 +320,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     text-decoration: none;
   }
 

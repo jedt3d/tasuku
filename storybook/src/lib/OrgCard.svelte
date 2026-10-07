@@ -63,6 +63,7 @@
     min-width: 0;
   }
   .name {
+    font-family: var(--font-display);
     font-size: var(--fs-lg);
     font-weight: 600;
   }

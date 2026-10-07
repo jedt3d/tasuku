@@ -2,10 +2,10 @@ import ActivityScatter from '../lib/ActivityScatter.svelte';
 import { activityLegend, activityRange, allActivity, lannaActivity } from '../lib/mock.js';
 
 export default {
-  title: 'Components/ActivityScatter',
+  title: 'Components/ActivityScatter', parameters: { notes: 'activityscatter' },
   component: ActivityScatter,
   args: { title: 'Support activity', groups: [lannaActivity], legend: activityLegend, ...activityRange },
-  argTypes: { range: { control: 'inline-radio', options: ['30 days', '90 days', 'All time'] } },
+  argTypes: { range: { control: 'inline-radio', options: ['30', '90', 'all'] } },
 };
 
 export const Collapsed = { name: 'Organization (collapsed, dots not clickable)' };
@@ -20,4 +20,4 @@ export const EventSelected = {
 export const AllOrganizations = {
   args: { title: 'Activity by Organization', groups: allActivity, expanded: ['Andaman Hospital'] },
 };
-export const AllTime = { args: { groups: allActivity, range: 'All time' } };
+export const AllTime = { args: { groups: allActivity, range: 'all' } };

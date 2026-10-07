@@ -13,16 +13,16 @@ export const task = {
   id: '#1042',
   title: 'PACS server upgrade — Radiology',
   organization: 'Lanna Medical Group',
-  due: '18 Oct 2026',
+  due: '2026-10-18',
   refersTo: '#0987 PACS storage expansion',
   collaborators: [staff.nicha, staff.kenji],
   timeline: [
-    { kind: 'event', icon: 'plus', actor: staff.owner, text: 'opened this Task', time: '12 Oct, 09:14' },
+    { kind: 'event', icon: 'plus', actor: staff.owner, key: 'event.opened', at: '2026-10-12T09:14Z' },
     {
       kind: 'comment',
       author: staff.owner,
-      role: 'Owner',
-      time: '12 Oct, 09:20',
+      role: 'owner',
+      at: '2026-10-12T09:20Z',
       text: 'แผนอัปเกรด PACS แนบมาแล้วครับ ใช้เวลาประมาณ 4 ชั่วโมง ขอ downtime คืนวันเสาร์ที่ 17 ต.ค. หลัง 22:00 น.',
       files: [{ name: 'pacs-upgrade-plan.pdf', kind: 'pdf', size: '1.2 MB' }],
       // Threads hang off the entry they were started from.
@@ -35,10 +35,10 @@ export const task = {
           messages: [
             {
               author: staff.kenji,
-              time: '13 Oct, 10:12',
+              at: '2026-10-13T10:12Z',
               text: 'バックアップは完了しました。Staging has been on the new build since this morning.',
             },
-            { author: staff.nicha, time: '13 Oct, 14:40', text: 'Verified — DICOM send and receive both pass.' },
+            { author: staff.nicha, at: '2026-10-13T14:40Z', text: 'Verified — DICOM send and receive both pass.' },
           ],
         },
       ],
@@ -47,22 +47,23 @@ export const task = {
       kind: 'event',
       icon: 'activity',
       actor: 'Tasuku',
-      text: 'moved this Task to',
+      key: 'event.movedTo',
       status: 'in_progress',
-      time: '12 Oct, 09:20',
+      at: '2026-10-12T09:20Z',
     },
     {
       kind: 'event',
       icon: 'userPlus',
       actor: staff.owner,
-      text: `added ${customer.name} as Customer`,
-      time: '12 Oct, 09:31',
+      key: 'event.addedCustomer',
+      vars: { name: customer.name },
+      at: '2026-10-12T09:31Z',
     },
     {
       kind: 'comment',
       author: customer.name,
-      role: 'Customer',
-      time: '12 Oct, 11:02',
+      role: 'customer',
+      at: '2026-10-12T11:02Z',
       text: 'รับทราบค่ะ คืนวันเสาร์สะดวก ขอแจ้งแผนกรังสีก่อนนะคะ แนบผังห้อง server มาให้ด้วยค่ะ',
       files: [{ name: 'server-room.webp', kind: 'image', size: '184 KB' }],
       threads: [
@@ -73,7 +74,7 @@ export const task = {
           messages: [
             {
               author: staff.nicha,
-              time: '14 Oct, 09:05',
+              at: '2026-10-14T09:05Z',
               text: 'ส่งแบบฟอร์มขอเข้าพื้นที่ไปแล้ว รออนุมัติจากฝ่ายอาคาร',
             },
           ],
@@ -84,23 +85,24 @@ export const task = {
       kind: 'event',
       icon: 'users',
       actor: staff.owner,
-      text: `added ${staff.nicha} and ${staff.kenji} as Collaborators`,
-      time: '13 Oct, 08:45',
+      key: 'event.addedCollaborators',
+      vars: { names: [staff.nicha, staff.kenji] },
+      at: '2026-10-13T08:45Z',
     },
     {
       kind: 'comment',
       author: staff.nicha,
-      role: 'Collaborator',
-      time: '14 Oct, 16:30',
+      role: 'collaborator',
+      at: '2026-10-14T16:30Z',
       edited: true,
       text: 'Access for three engineers is confirmed with building security from 21:30.',
     },
-    { kind: 'deleted', icon: 'trash', time: '14 Oct, 16:48' },
+    { kind: 'deleted', icon: 'trash', at: '2026-10-14T16:48Z' },
     {
       kind: 'comment',
       author: customer.name,
-      role: 'Customer',
-      time: '15 Oct, 08:10',
+      role: 'customer',
+      at: '2026-10-15T08:10Z',
       text: 'Radiology has been notified. Please keep one workstation online for emergency cases.',
     },
   ],
@@ -110,78 +112,40 @@ export const resolvedEvent = {
   kind: 'event',
   icon: 'checkCircle',
   actor: staff.owner,
-  text: 'proposed closing this Task',
+  key: 'event.proposedClose',
   status: 'resolved',
-  time: '18 Oct, 02:40',
+  at: '2026-10-18T02:40Z',
 };
 
+// Filters and cards carry message keys and numbers; the screens turn them into text.
 export const statusCounts = [
-  { id: 'all', label: 'All Tasks' },
-  { id: 'open', label: 'Open', count: 6 },
-  { id: 'in_progress', label: 'In progress', count: 14 },
-  { id: 'resolved', label: 'Resolved', count: 4 },
-  { id: 'done', label: 'Done' },
-  { id: 'cancelled', label: 'Cancelled' },
+  { id: 'all' },
+  { id: 'open', count: 6 },
+  { id: 'in_progress', count: 14 },
+  { id: 'resolved', count: 4 },
+  { id: 'done' },
+  { id: 'cancelled' },
 ];
 
+const org = (name, tone, badge, value, latest, ago, meta, internal = false) => ({
+  name,
+  internal,
+  value,
+  badge: { tone, key: badge[0], n: badge[1] },
+  latest,
+  ago,
+  meta: { key: meta[0], n: meta[1] },
+});
+
 export const organizations = [
-  {
-    name: 'Lanna Medical Group',
-    badge: { tone: 'amber', label: '2 awaiting confirmation' },
-    value: 7,
-    latest: '#1042 PACS server upgrade · 12 min ago',
-    meta: '3 in progress',
-  },
-  {
-    name: 'Andaman Hospital',
-    badge: { tone: 'red', label: '1 past due' },
-    value: 4,
-    latest: '#1040 HL7 interface drops orders · 1 h ago',
-    meta: '2 in progress',
-  },
-  {
-    name: 'Chao Phraya Clinic',
-    badge: { tone: 'blue', label: 'Waiting on us' },
-    value: 3,
-    latest: '#1039 New modality worklist · 3 h ago',
-    meta: '1 in progress',
-  },
-  {
-    name: 'Isan Regional Hospital',
-    badge: { tone: 'green', label: 'All confirmed' },
-    value: 0,
-    latest: '#1021 Viewer licence renewal · 2 days ago',
-    meta: '18 done this year',
-  },
-  {
-    name: 'Rayong Imaging Lab',
-    badge: { tone: 'amber', label: '1 awaiting confirmation' },
-    value: 2,
-    latest: '#1036 CD burner fails on finalize · yesterday',
-    meta: '1 in progress',
-  },
-  {
-    name: 'Sukhumvit Dental',
-    badge: { tone: 'slate', label: 'Not started' },
-    value: 1,
-    latest: '#1041 Panoramic X-ray import · 5 h ago',
-    meta: '0 in progress',
-  },
-  {
-    name: 'Mekong Eye Centre',
-    badge: { tone: 'blue', label: 'Waiting on us' },
-    value: 2,
-    latest: '#1033 OCT images not archiving · 2 days ago',
-    meta: '2 in progress',
-  },
-  {
-    name: 'PSP internal',
-    internal: true,
-    badge: { tone: 'violet', label: 'No Customer' },
-    value: 5,
-    latest: '#1037 Windows Server patch round · 4 h ago',
-    meta: '3 in progress',
-  },
+  org('Lanna Medical Group', 'amber', ['org.awaiting', 2], 7, '#1042 PACS server upgrade', [-12, 'minute'], ['org.inProgress', 3]),
+  org('Andaman Hospital', 'red', ['org.pastDue', 1], 4, '#1040 HL7 interface drops orders', [-1, 'hour'], ['org.inProgress', 2]),
+  org('Chao Phraya Clinic', 'blue', ['org.waitingOnUs'], 3, '#1039 New modality worklist', [-3, 'hour'], ['org.inProgress', 1]),
+  org('Isan Regional Hospital', 'green', ['org.allConfirmed'], 0, '#1021 Viewer licence renewal', [-2, 'day'], ['org.doneYear', 18]),
+  org('Rayong Imaging Lab', 'amber', ['org.awaiting', 1], 2, '#1036 CD burner fails on finalize', [-1, 'day'], ['org.inProgress', 1]),
+  org('Sukhumvit Dental', 'slate', ['org.notStarted'], 1, '#1041 Panoramic X-ray import', [-5, 'hour'], ['org.inProgress', 0]),
+  org('Mekong Eye Centre', 'blue', ['org.waitingOnUs'], 2, '#1033 OCT images not archiving', [-2, 'day'], ['org.inProgress', 2]),
+  org('PSP internal', 'violet', ['org.noCustomer'], 5, '#1037 Windows Server patch round', [-4, 'hour'], ['org.inProgress', 3], true),
 ];
 
 export const orgTasks = [
@@ -191,7 +155,7 @@ export const orgTasks = [
     status: 'in_progress',
     owner: staff.owner,
     customer: customer.name,
-    updated: '12 min ago',
+    updated: { ago: [-12, 'minute'] },
   },
   {
     id: '#1038',
@@ -199,7 +163,7 @@ export const orgTasks = [
     status: 'resolved',
     owner: staff.nicha,
     customer: 'Anan Kittisak',
-    updated: 'closes automatically in 31 h',
+    updated: { closesIn: 31 },
   },
   {
     id: '#1031',
@@ -207,7 +171,7 @@ export const orgTasks = [
     status: 'open',
     owner: staff.kenji,
     customer: customer.name,
-    updated: 'yesterday',
+    updated: { ago: [-1, 'day'] },
   },
   {
     id: '#1019',
@@ -215,7 +179,7 @@ export const orgTasks = [
     status: 'done',
     owner: staff.owner,
     customer: customer.name,
-    updated: '10 Sep',
+    updated: { date: '2026-09-10' },
   },
   {
     id: '#1007',
@@ -223,7 +187,7 @@ export const orgTasks = [
     status: 'done',
     owner: staff.nicha,
     customer: 'Anan Kittisak',
-    updated: '23 Aug',
+    updated: { date: '2026-08-23' },
   },
   {
     id: '#0994',
@@ -231,25 +195,25 @@ export const orgTasks = [
     status: 'cancelled',
     owner: staff.kenji,
     customer: customer.name,
-    updated: '3 Aug',
+    updated: { date: '2026-08-03' },
   },
 ];
 
 export const orgStats = [
-  { label: 'Open', value: 1, tone: 'slate' },
-  { label: 'In progress', value: 3, tone: 'blue' },
-  { label: 'Awaiting confirmation', value: 2, tone: 'amber' },
-  { label: 'Done this year', value: 14, tone: 'green' },
+  { key: 'stat.open', value: 1, tone: 'slate' },
+  { key: 'stat.inProgress', value: 3, tone: 'blue' },
+  { key: 'stat.awaiting', value: 2, tone: 'amber' },
+  { key: 'stat.doneYear', value: 14, tone: 'green' },
 ];
 
 // --- Activity: the Timeline of every Task, condensed to its events ------------------
 // Tones: primary = Task opened, amber = Resolved, green = Done, none = comment or other event.
 export const activityRange = { from: '2026-05-01', to: '2026-10-31' };
 export const activityLegend = [
-  { tone: 'primary', label: 'Task opened' },
-  { tone: '', label: 'Comment or event' },
-  { tone: 'amber', label: 'Resolved' },
-  { tone: 'green', label: 'Done' },
+  { tone: 'primary', key: 'legend.opened' },
+  { tone: '', key: 'legend.event' },
+  { tone: 'amber', key: 'legend.resolved' },
+  { tone: 'green', key: 'legend.done' },
 ];
 
 // One Customer's events on one Task: [date, tone, summary, weight?]

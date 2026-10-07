@@ -1,6 +1,6 @@
 import Composer from '../lib/Composer.svelte';
 
-export default { title: 'Components/Composer', component: Composer };
+export default { title: 'Components/Composer', parameters: { notes: 'composer' }, component: Composer };
 
 export const Staff = {};
 export const Customer = { args: { placeholder: 'Reply to PSP…' } };

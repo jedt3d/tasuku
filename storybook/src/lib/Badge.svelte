@@ -1,17 +1,12 @@
 <script>
-  // Pass `status` for a Task status, or `tone` + `label` for anything else.
-  const statuses = {
-    open: ['slate', 'Open'],
-    in_progress: ['blue', 'In progress'],
-    resolved: ['amber', 'Resolved'],
-    done: ['green', 'Done'],
-    cancelled: ['red', 'Cancelled'],
-    settled: ['green', 'Settled'],
-  };
+  import { t } from '../i18n/index.svelte.js';
+
+  // Pass `status` for a Task or Thread status, or `tone` + `label` for anything else.
+  const tones = { open: 'slate', in_progress: 'blue', resolved: 'amber', done: 'green', cancelled: 'red', settled: 'green' };
 
   let { status, tone = 'slate', label = '', dot = true, caps = false } = $props();
 
-  const resolved = $derived(status ? statuses[status] : [tone, label]);
+  const resolved = $derived(status ? [tones[status], t(`status.${status}`)] : [tone, label]);
 </script>
 
 <span class="badge {resolved[0]}" class:caps>
@@ -25,6 +20,7 @@
     gap: 6px;
     padding: 2px 10px;
     border-radius: var(--r-pill);
+    font-family: var(--font-display);
     font-size: var(--fs-xs);
     font-weight: 600;
     line-height: 1.6;

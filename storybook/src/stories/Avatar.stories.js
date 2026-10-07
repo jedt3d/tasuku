@@ -1,6 +1,6 @@
 import Avatar from '../lib/Avatar.svelte';
 
-export default { title: 'Components/Avatar', component: Avatar, args: { name: 'Somchai Prasert', size: 40 } };
+export default { title: 'Components/Avatar', parameters: { notes: 'avatar' }, component: Avatar, args: { name: 'Somchai Prasert', size: 40 } };
 
 export const Staff = {};
 export const Customer = { args: { name: 'Dr. Ploy Suwan' } };

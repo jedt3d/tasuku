@@ -8,6 +8,7 @@
   import SlideOver from '../lib/SlideOver.svelte';
   import Tabs from '../lib/Tabs.svelte';
   import TopBar from '../lib/TopBar.svelte';
+  import { relative, t } from '../i18n/index.svelte.js';
   import { activityLegend, activityRange, allActivity, organizations, statusCounts } from '../lib/mock.js';
 
   let { newTask = false, initialView = 'organizations' } = $props();
@@ -16,24 +17,40 @@
   let status = $state('all');
   let view = $state(initialView);
   let layout = $state('grid');
-  const views = [
-    { id: 'organizations', label: 'By Organization' },
-    { id: 'activity', label: 'Activity' },
-    { id: 'all', label: 'All Tasks' },
-    { id: 'mine', label: 'My Tasks', count: 5 },
-  ];
+
+  const statuses = $derived(
+    statusCounts.map((s) => ({ ...s, label: s.id === 'all' ? t('filter.allTasks') : t(`status.${s.id}`) })),
+  );
+  const views = $derived([
+    { id: 'organizations', label: t('overview.byOrganization') },
+    { id: 'activity', label: t('overview.activity') },
+    { id: 'all', label: t('filter.allTasks') },
+    { id: 'mine', label: t('overview.myTasks'), count: 5 },
+  ]);
+  // Cards receive finished text: the mock carries keys and numbers, the screen localises them.
+  const cards = $derived(
+    organizations.map((org) => ({
+      name: org.name,
+      internal: org.internal,
+      value: org.value,
+      unit: t('org.open'),
+      badge: { tone: org.badge.tone, label: t(org.badge.key, { n: org.badge.n }) },
+      latest: `${org.latest} · ${relative(...org.ago)}`,
+      meta: t(org.meta.key, { n: org.meta.n }),
+    })),
+  );
 </script>
 
 <div class="app">
   <TopBar active="overview" />
 
   <div class="toolbar">
-    <Tabs items={statusCounts} bind:active={status} />
+    <Tabs items={statuses} bind:active={status} />
     <label class="search">
       <Icon name="search" size={17} />
-      <input placeholder="Search Tasks…" />
+      <input placeholder={t('overview.search')} />
     </label>
-    <Button variant="primary" icon="plus" label="New Task" onclick={() => (panel = true)} />
+    <Button variant="primary" icon="plus" label={t('common.newTask')} onclick={() => (panel = true)} />
   </div>
 
   <div class="views"><Tabs variant="underline" items={views} bind:active={view} /></div>
@@ -41,67 +58,62 @@
   <main>
     {#if view === 'activity'}
       <ActivityScatter
-        title="Activity by Organization"
+        title={t('overview.activityTitle')}
         groups={allActivity}
         legend={activityLegend}
         expanded={['Lanna Medical Group']}
         {...activityRange}
       />
     {:else}
-    <section class="panel">
-      <header>
-        <h1>Organizations</h1>
-        <div class="controls">
-          <Button label="Counting: Open Tasks" iconRight="chevronDown" />
-          <Button label="Sort by: Last change" iconRight="chevronDown" />
-          <div class="toggle" role="group" aria-label="Layout">
-            <button class:active={layout === 'grid'} aria-label="Grid" onclick={() => (layout = 'grid')}
-              ><Icon name="grid" size={17} /></button
-            >
-            <button class:active={layout === 'list'} aria-label="List" onclick={() => (layout = 'list')}
-              ><Icon name="list" size={17} /></button
-            >
+      <section class="panel">
+        <header>
+          <h1>{t('overview.organizations')}</h1>
+          <div class="controls">
+            <Button label={t('overview.counting')} iconRight="chevronDown" />
+            <Button label={t('overview.sort')} iconRight="chevronDown" />
+            <div class="toggle" role="group" aria-label={t('overview.layout')}>
+              <button class:active={layout === 'grid'} aria-label={t('overview.grid')} onclick={() => (layout = 'grid')}
+                ><Icon name="grid" size={17} /></button
+              >
+              <button class:active={layout === 'list'} aria-label={t('overview.list')} onclick={() => (layout = 'list')}
+                ><Icon name="list" size={17} /></button
+              >
+            </div>
           </div>
+        </header>
+        <div class="cards" class:list={layout === 'list'}>
+          {#each cards as card (card.name)}
+            <OrgCard {...card} />
+          {/each}
         </div>
-      </header>
-      <div class="cards" class:list={layout === 'list'}>
-        {#each organizations as org (org.name)}
-          <OrgCard {...org} />
-        {/each}
-      </div>
-    </section>
+      </section>
     {/if}
   </main>
 
-  <SlideOver
-    open={panel}
-    title="New Task"
-    subtitle="You become the Owner. It starts as Open."
-    onclose={() => (panel = false)}
-  >
+  <SlideOver open={panel} title={t('common.newTask')} subtitle={t('new.subtitle')} onclose={() => (panel = false)}>
     <div class="form">
-      <Field label="Title" placeholder="What needs to be done?" />
-      <Field label="Description" type="textarea" placeholder="Context, steps, anything the next person needs." />
+      <Field label={t('new.title')} placeholder={t('new.titlePh')} />
+      <Field label={t('new.description')} type="textarea" placeholder={t('new.descriptionPh')} />
       <Field
-        label="Organization"
+        label={t('task.organization')}
         type="select"
         icon="building"
-        options={['No Organization (internal)', ...organizations.filter((o) => !o.internal).map((o) => o.name)]}
-        hint="Optional. A label for grouping; it grants no access."
+        options={[t('new.orgNone'), ...organizations.filter((o) => !o.internal).map((o) => o.name)]}
+        hint={t('new.orgHint')}
       />
       <Field
-        label="Customer email"
+        label={t('new.customerEmail')}
         type="email"
         icon="mail"
         placeholder="name@example.com"
-        action="Optional"
-        hint="One Customer per Task. They get a magic link to this Task only."
+        action={t('common.optional')}
+        hint={t('new.customerHint')}
       />
-      <Field label="Due date" type="date" action="Optional" />
+      <Field label={t('task.dueDate')} type="date" action={t('common.optional')} />
     </div>
     {#snippet footer()}
-      <Button label="Cancel" onclick={() => (panel = false)} />
-      <Button variant="primary" label="Open Task" />
+      <Button label={t('common.cancel')} onclick={() => (panel = false)} />
+      <Button variant="primary" label={t('new.submit')} />
     {/snippet}
   </SlideOver>
 </div>

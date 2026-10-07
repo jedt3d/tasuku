@@ -8,6 +8,7 @@
   import SlideOver from '../lib/SlideOver.svelte';
   import Timeline from '../lib/Timeline.svelte';
   import TopBar from '../lib/TopBar.svelte';
+  import { formatDate, relative, t } from '../i18n/index.svelte.js';
   import { activityLegend, activityRange, lannaActivity, orgStats, orgTasks, task } from '../lib/mock.js';
 
   let { peek = false, selectedPoint = 'Lanna Medical Group/Dr. Ploy Suwan/10' } = $props();
@@ -15,7 +16,14 @@
   let selected = $state(selectedPoint);
   let peeked = $state(peek ? orgTasks[0] : null);
   // A dot belongs to a Task; open that Task in the side panel.
-  const peekAt = (dot) => (peeked = orgTasks.find((t) => dot.title.startsWith(t.id)) ?? orgTasks[0]);
+  const peekAt = (dot) => (peeked = orgTasks.find((row) => dot.title.startsWith(row.id)) ?? orgTasks[0]);
+
+  const when = (updated) =>
+    updated.ago
+      ? relative(...updated.ago)
+      : updated.date
+        ? formatDate(updated.date)
+        : t('organization.closesIn', { hours: updated.closesIn });
 </script>
 
 <div class="app">
@@ -23,29 +31,34 @@
 
   <main>
     <nav class="crumbs">
-      <a href="#overview">Overview</a><Icon name="chevronRight" size={14} /><span>{task.organization}</span>
+      <a href="#overview">{t('nav.overview')}</a><Icon name="chevronRight" size={14} /><span>{task.organization}</span>
     </nav>
 
     <header class="hero">
       <Avatar name={task.organization} size={52} />
       <div class="htext">
         <h1>{task.organization}</h1>
-        <p>3 Customers · first Task opened in March 2025</p>
+        <p>
+          {t('organization.summary', {
+            customers: 3,
+            when: formatDate('2025-03-01', { month: 'long', year: 'numeric' }),
+          })}
+        </p>
       </div>
-      <Button variant="primary" icon="plus" label="New Task" />
+      <Button variant="primary" icon="plus" label={t('common.newTask')} />
     </header>
 
     <div class="stats">
-      {#each orgStats as stat (stat.label)}
+      {#each orgStats as stat (stat.key)}
         <div class="stat">
           <span class="num">{stat.value}</span>
-          <Badge tone={stat.tone} label={stat.label} />
+          <Badge tone={stat.tone} label={t(stat.key)} />
         </div>
       {/each}
     </div>
 
     <ActivityScatter
-      title="Support activity"
+      title={t('organization.activity')}
       groups={[lannaActivity]}
       legend={activityLegend}
       expanded={[lannaActivity.name]}
@@ -56,7 +69,7 @@
     />
 
     <section class="panel">
-      <header><h2>Tasks</h2><span class="count">{orgTasks.length}</span></header>
+      <header><h2>{t('organization.tasks')}</h2><span class="count">{orgTasks.length}</span></header>
       <ul>
         {#each orgTasks as row (row.id)}
           <li>
@@ -65,7 +78,7 @@
               <span class="title">{row.title}</span>
               <Badge status={row.status} />
               <span class="owner"><Avatar name={row.owner} size={24} />{row.owner}</span>
-              <span class="updated">{row.updated}</span>
+              <span class="updated">{when(row.updated)}</span>
               <Icon name="chevronRight" size={16} />
             </button>
           </li>
@@ -74,20 +87,23 @@
     </section>
   </main>
 
-  <SlideOver
-    open={peeked != null}
-    width={520}
-    title="{peeked?.id} {peeked?.title}"
-    subtitle="Owner {peeked?.owner} · Customer {peeked?.customer}"
-    onclose={() => (peeked = null)}
-  >
-    <div class="peekmeta"><Badge status={peeked?.status} /><span>Updated {peeked?.updated}</span></div>
-    <Timeline entries={task.timeline.slice(0, 6)} />
-    {#snippet footer()}
-      <Button label="Close" onclick={() => (peeked = null)} />
-      <Button variant="primary" iconRight="arrowUpRight" label="Open full Task" />
-    {/snippet}
-  </SlideOver>
+  {#if peeked}
+    <SlideOver
+      width={520}
+      title="{peeked.id} {peeked.title}"
+      subtitle={t('organization.people', { owner: peeked.owner, customer: peeked.customer })}
+      onclose={() => (peeked = null)}
+    >
+      <div class="peekmeta">
+        <Badge status={peeked.status} /><span>{t('organization.updated', { when: when(peeked.updated) })}</span>
+      </div>
+      <Timeline entries={task.timeline.slice(0, 6)} />
+      {#snippet footer()}
+        <Button label={t('common.close')} onclick={() => (peeked = null)} />
+        <Button variant="primary" iconRight="arrowUpRight" label={t('organization.openFull')} />
+      {/snippet}
+    </SlideOver>
+  {/if}
 </div>
 
 <style>
@@ -110,7 +126,7 @@
     font-size: var(--fs-sm);
   }
   .crumbs a {
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     text-decoration: none;
   }
   .hero {

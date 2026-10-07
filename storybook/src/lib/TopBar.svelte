@@ -2,19 +2,12 @@
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
   import defaultLogo from '../assets/logo.svg';
-
-  const locales = ['th', 'en', 'ja'];
+  import { i18n, locales, setLocale, t } from '../i18n/index.svelte.js';
 
   let {
-    nav = [
-      { id: 'overview', label: 'Overview' },
-      { id: 'tasks', label: 'Tasks' },
-      { id: 'organizations', label: 'Organizations' },
-      { id: 'staff', label: 'Staff' },
-    ],
+    nav = ['overview', 'tasks', 'organizations', 'staff'],
     active = 'overview',
     user = 'Somchai Prasert',
-    locale = $bindable('en'),
     // logo: URL of an SVG. Set wordmark to false when the SVG already contains the name.
     logo = defaultLogo,
     wordmark = true,
@@ -31,16 +24,16 @@
 
   {#if !minimal}
     <nav>
-      {#each nav as item (item.id)}
-        <a href="#{item.id}" class:active={item.id === active}>{item.label}</a>
+      {#each nav as id (id)}
+        <a href="#{id}" class:active={id === active}>{t(`nav.${id}`)}</a>
       {/each}
     </nav>
   {/if}
 
   <div class="right">
-    <div class="locale" role="group" aria-label="Language">
-      {#each locales as code}
-        <button class:active={code === locale} onclick={() => (locale = code)}
+    <div class="locale" role="group" aria-label={t('nav.language')}>
+      {#each locales as code (code)}
+        <button class:active={code === i18n.locale} onclick={() => setLocale(code)}
           >{code.toUpperCase()}</button
         >
       {/each}
@@ -80,6 +73,7 @@
     width: auto;
   }
   .name {
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: var(--fs-lg);
     letter-spacing: -0.01em;
@@ -91,6 +85,7 @@
     scrollbar-width: none;
   }
   nav a {
+    font-family: var(--font-display);
     padding: 7px 12px;
     border-radius: 8px;
     color: var(--c-text-3);
@@ -103,7 +98,7 @@
   }
   nav a.active {
     background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
   }
   .right {
     display: flex;
@@ -130,7 +125,7 @@
   }
   .locale button.active {
     background: var(--c-primary-soft);
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
   }
   .user {
     display: flex;

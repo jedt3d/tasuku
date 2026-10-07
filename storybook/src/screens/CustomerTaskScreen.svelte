@@ -7,6 +7,7 @@
   import Icon from '../lib/Icon.svelte';
   import Timeline from '../lib/Timeline.svelte';
   import TopBar from '../lib/TopBar.svelte';
+  import { t } from '../i18n/index.svelte.js';
   import { customer, resolvedEvent, staff, task } from '../lib/mock.js';
 
   // framed: draw a phone-sized frame around the screen, for viewing on a desktop canvas.
@@ -20,22 +21,22 @@
     <TopBar minimal user={customer.name} />
 
     <header class="summary">
-      <a class="back" href="#tasks"><Icon name="chevronLeft" size={16} /> My Tasks</a>
+      <a class="back" href="#tasks"><Icon name="chevronLeft" size={16} /> {t('customer.myTasks')}</a>
       <h1>{task.title}</h1>
       <div class="meta">
         <Badge {status} />
-        <span>Task {task.id}</span>
+        <span>{t('task.number', { id: task.id })}</span>
         <span class="owner"><Avatar name={staff.owner} size={22} />{staff.owner}</span>
       </div>
     </header>
 
     {#if status === 'resolved'}
       <section class="confirm">
-        <strong>PSP considers this finished. Is it done for you?</strong>
-        <p>If we don't hear from you, it closes automatically in 31 hours.</p>
+        <strong>{t('customer.confirmTitle')}</strong>
+        <p>{t('customer.confirmBody', { hours: 31 })}</p>
         <div class="choices">
-          <Button variant="primary" icon="checkCircle" label="Yes, mark Done" block />
-          <Button icon="reopen" label="Reopen" block />
+          <Button variant="primary" icon="checkCircle" label={t('customer.yesDone')} block />
+          <Button icon="reopen" label={t('task.reopen')} block />
         </div>
       </section>
     {/if}
@@ -45,11 +46,11 @@
     </main>
 
     <footer>
-      <Composer placeholder="Reply to PSP…" />
+      <Composer placeholder={t('composer.reply')} />
       {#if status !== 'resolved'}
         <div class="closing">
-          <button class="text">Mark as Done</button>
-          <button class="text danger">Cancel this Task</button>
+          <button class="text">{t('customer.markDone')}</button>
+          <button class="text danger">{t('customer.cancel')}</button>
         </div>
       {/if}
     </footer>
@@ -88,7 +89,7 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-sm);
     font-weight: 500;
     text-decoration: none;
@@ -150,7 +151,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--c-primary-hover);
+    color: var(--c-primary-text);
     font-size: var(--fs-sm);
     font-weight: 500;
     cursor: pointer;

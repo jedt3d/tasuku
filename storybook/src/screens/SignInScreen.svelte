@@ -4,6 +4,7 @@
   import Field from '../lib/Field.svelte';
   import Icon from '../lib/Icon.svelte';
   import TopBar from '../lib/TopBar.svelte';
+  import { t } from '../i18n/index.svelte.js';
 
   let { sent = false } = $props();
   let done = $state(sent);
@@ -15,14 +16,14 @@
     <section class="card">
       {#if done}
         <span class="icon"><Icon name="mail" size={24} /></span>
-        <h1>Check your email</h1>
-        <p>We sent a sign-in link to <strong>ploy.s@lanna-medical.example</strong>. Open it to continue.</p>
-        <Button label="Use a different email" block onclick={() => (done = false)} />
+        <h1>{t('signin.sentTitle')}</h1>
+        <p>{t('signin.sentBody', { email: 'ploy.s@lanna-medical.example' })}</p>
+        <Button label={t('signin.other')} block onclick={() => (done = false)} />
       {:else}
-        <h1>Sign in to Tasuku</h1>
-        <p>Enter your email and we'll send you a link. No password needed.</p>
-        <Field label="Email" type="email" icon="mail" placeholder="name@example.com" />
-        <Button variant="primary" label="Send magic link" block onclick={() => (done = true)} />
+        <h1>{t('signin.title')}</h1>
+        <p>{t('signin.body')}</p>
+        <Field label={t('signin.email')} type="email" icon="mail" placeholder="name@example.com" />
+        <Button variant="primary" label={t('signin.send')} block onclick={() => (done = true)} />
       {/if}
     </section>
   </main>

@@ -1,5 +1,6 @@
 <script>
   import Icon from './Icon.svelte';
+  import { t } from '../i18n/index.svelte.js';
 
   // A side panel that slides in from the right and leaves the page behind it visible and usable.
   let { open = true, title = '', subtitle = '', width = 460, onclose, children, footer } = $props();
@@ -12,7 +13,7 @@
         <h2>{title}</h2>
         {#if subtitle}<p>{subtitle}</p>{/if}
       </div>
-      <button class="close" aria-label="Close" onclick={() => onclose?.()}><Icon name="x" /></button>
+      <button class="close" aria-label={t('common.close')} onclick={() => onclose?.()}><Icon name="x" /></button>
     </header>
     <div class="body">{@render children?.()}</div>
     {#if footer}<footer>{@render footer()}</footer>{/if}

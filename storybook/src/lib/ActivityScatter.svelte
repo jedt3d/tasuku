@@ -3,23 +3,25 @@
   import Badge from './Badge.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
+  import { formatDate, t } from '../i18n/index.svelte.js';
 
   // The Timeline in condensed form: only the events, as dots on a date axis.
   // groups: [{ name, rows: [{ name, points: [{ date, tone, weight, title, summary, status, people }] }] }]
   // A group is an Organization: its row gathers every dot beneath it and is not clickable.
   // Expanded, each row is one Customer, and a dot opens a card about that event.
   let {
-    title = 'Activity',
+    title = '',
+    // legend: [{ tone, key }] where key is a message key
     legend = [],
     groups = [],
     from,
     to,
     ranges = [
-      { label: '30 days', days: 30 },
-      { label: '90 days', days: 90 },
-      { label: 'All time', days: null },
+      { id: '30', days: 30 },
+      { id: '90', days: 90 },
+      { id: 'all', days: null },
     ],
-    range = $bindable('90 days'),
+    range = $bindable('90'),
     expanded = $bindable([]),
     selected = $bindable(null),
     onpeek,
@@ -29,14 +31,13 @@
   const DAY = 864e5;
   const t0 = $derived(Date.parse(from));
   const span = $derived(Math.round((Date.parse(to) - t0) / DAY));
-  const windowDays = $derived(Math.min(ranges.find((r) => r.label === range)?.days ?? span, span));
+  const windowDays = $derived(Math.min(ranges.find((r) => r.id === range)?.days ?? span, span));
 
   // The window is remembered by its right edge, so changing the range keeps the latest days in view.
   let end = $state(Infinity);
   const start = $derived(Math.max(0, Math.min(end, span) - windowDays));
 
-  const fmt = (day, opts = { day: 'numeric', month: 'short' }) =>
-    new Date(t0 + day * DAY).toLocaleDateString('en-GB', { timeZone: 'UTC', ...opts });
+  const fmt = (day, opts) => formatDate(t0 + day * DAY, opts);
   const dayOf = (point) => (Date.parse(point.date) - t0) / DAY;
 
   const place = (points) =>
@@ -129,11 +130,11 @@
       >
     </div>
     <div class="legend">
-      {#each legend as item (item.label)}<span><i class="pt {item.tone}"></i>{item.label}</span>{/each}
+      {#each legend as item (item.key)}<span><i class="pt {item.tone}"></i>{t(item.key)}</span>{/each}
     </div>
-    <div class="ranges" role="group" aria-label="Range">
-      {#each ranges as r (r.label)}
-        <button class:active={r.label === range} onclick={() => (range = r.label)}>{r.label}</button>
+    <div class="ranges" role="group" aria-label={t('activity.range')}>
+      {#each ranges as r (r.id)}
+        <button class:active={r.id === range} onclick={() => (range = r.id)}>{t(`range.${r.id}`)}</button>
       {/each}
     </div>
   </header>
@@ -192,8 +193,8 @@
                       <Badge status={dot.status} />
                     </div>
                     <div class="pactions">
-                      <Button size="sm" label="Peek" block onclick={() => onpeek?.(dot)} />
-                      <Button size="sm" variant="soft" label="Open Task" block onclick={() => onopen?.(dot)} />
+                      <Button size="sm" label={t('common.peek')} block onclick={() => onpeek?.(dot)} />
+                      <Button size="sm" variant="soft" label={t('common.openTask')} block onclick={() => onopen?.(dot)} />
                     </div>
                   </div>
                 {/if}
@@ -215,11 +216,11 @@
           class:dragging={drag}
           role="slider"
           tabindex="0"
-          aria-label="Visible dates"
+          aria-label={t('activity.visible')}
           aria-valuemin={0}
           aria-valuemax={span - windowDays}
           aria-valuenow={start}
-          aria-valuetext="{fmt(start)} to {fmt(start + windowDays)}"
+          aria-valuetext={t('activity.to', { from: fmt(start), to: fmt(start + windowDays) })}
           style="left:{(start / span) * 100}%;width:{(windowDays / span) * 100}%"
           onpointerdown={down}
           onpointermove={move}
@@ -227,7 +228,7 @@
           onpointercancel={() => (drag = null)}
           onkeydown={key}
         >
-          <Icon name="chevronLeft" size={14} /><span>{range}</span><Icon name="chevronRight" size={14} />
+          <Icon name="chevronLeft" size={14} /><span>{t(`range.${range}`)}</span><Icon name="chevronRight" size={14} />
         </div>
       </div>
       <div class="months">
@@ -416,17 +417,17 @@
     padding: 0;
     border: 0;
     border-radius: 50%;
-    background: #c3c8d4;
+    background: var(--c-dot);
     transform: translate(-50%, -50%);
   }
   .pt.primary {
     background: var(--c-primary);
   }
   .pt.green {
-    background: #2e9e6b;
+    background: var(--c-dot-green);
   }
   .pt.amber {
-    background: #e2a23a;
+    background: var(--c-dot-amber);
   }
   button.pt {
     cursor: pointer;

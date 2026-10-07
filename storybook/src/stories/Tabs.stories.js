@@ -1,10 +1,18 @@
 import Tabs from '../lib/Tabs.svelte';
-import { statusCounts } from '../lib/mock.js';
 
 export default {
-  title: 'Components/Tabs',
+  title: 'Components/Tabs', parameters: { notes: 'tabs' },
   component: Tabs,
-  args: { items: statusCounts, active: 'all' },
+  args: {
+    active: 'all',
+    items: [
+      { id: 'all', label: 'All Tasks' },
+      { id: 'open', label: 'Open', count: 6 },
+      { id: 'in_progress', label: 'In progress', count: 14 },
+      { id: 'resolved', label: 'Resolved', count: 4 },
+      { id: 'done', label: 'Done' },
+    ],
+  },
   argTypes: { variant: { control: 'inline-radio', options: ['pill', 'underline'] } },
 };
 

@@ -1,7 +1,7 @@
 import Badge from '../lib/Badge.svelte';
 
 export default {
-  title: 'Components/Badge',
+  title: 'Components/Badge', parameters: { notes: 'badge' },
   component: Badge,
   argTypes: {
     status: { control: 'select', options: ['open', 'in_progress', 'resolved', 'done', 'cancelled', 'settled'] },
