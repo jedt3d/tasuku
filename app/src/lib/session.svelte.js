@@ -6,14 +6,11 @@ import { supabase } from './supabase.js';
 
 export const auth = $state({ ready: false, failed: false, userId: null, email: null, staff: null });
 
-// The browser remembers the language for visits that are not signed in. A choice made on the
-// sign-in page is also kept as "pending", so it can become the stored preference after sign-in.
+// The browser remembers the language only for visits that are not signed in.
 const LOCALE = 'tasuku.locale';
-const PENDING = 'tasuku.locale.pending';
 const browser = {
   get: (key) => { try { return localStorage.getItem(key); } catch { return null; } },
   set: (key, value) => { try { localStorage.setItem(key, value); } catch { /* private mode: not remembered */ } },
-  remove: (key) => { try { localStorage.removeItem(key); } catch { /* nothing to remove */ } },
 };
 
 function saveLanguage(code) {
@@ -44,12 +41,8 @@ async function load(session) {
   }
   Object.assign(auth, { userId, email: session?.user.email ?? null, staff, failed, ready: true });
 
-  if (staff) {
-    const pending = browser.get(PENDING);
-    if (pending && pending !== staff.language) saveLanguage(pending);
-    else setLocale(staff.language);
-  }
-  if (session) browser.remove(PENDING);
+  // Once signed in, the stored preference always wins over what this browser remembered.
+  if (staff) setLocale(staff.language);
 }
 
 export function start() {
@@ -66,9 +59,7 @@ export function rememberLocale(code) {
   if (code === (browser.get(LOCALE) ?? 'en')) return;
   browser.set(LOCALE, code);
   untrack(() => {
-    if (auth.staff) {
-      if (auth.staff.language !== code) saveLanguage(code);
-    } else if (!auth.email) browser.set(PENDING, code);
+    if (auth.staff && auth.staff.language !== code) saveLanguage(code);
   });
 }
 
