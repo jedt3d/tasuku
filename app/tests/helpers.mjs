@@ -7,7 +7,8 @@ import { localSupabase } from '../scripts/local-supabase.mjs';
 export const env = localSupabase();
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 
-// The secret key bypasses Row Level Security: tests use it only to arrange users, never to assert.
+// The secret key bypasses Row Level Security: tests use it only to arrange, never to assert. It
+// arranges users, and a Task's status for as long as no function sets one (#5, #8).
 export const admin = createClient(env.url, env.secretKey, options);
 export const anonymous = () => createClient(env.url, env.publishableKey, options);
 

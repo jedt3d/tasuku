@@ -3,7 +3,8 @@
   import Field from '@ui/lib/Field.svelte';
   import Icon from '@ui/lib/Icon.svelte';
   import { t } from '@ui/i18n/index.svelte.js';
-  import { auth, signOut } from '#lib/session.svelte.js';
+  import Overview from '#lib/Overview.svelte';
+  import { auth } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
   let email = $state('');
@@ -29,6 +30,9 @@
   }
 </script>
 
+{#if auth.staff}
+  <Overview />
+{:else}
 <main>
   {#if auth.email}
     <section class="card">
@@ -36,10 +40,8 @@
       {#if auth.failed}
         <p class="error" role="alert">{t('common.error')}</p>
       {:else}
-        <p>{auth.staff ? t('home.empty') : t('home.noAccess')}</p>
-        {#if auth.staff}<a href="/staff">{t('nav.staff')}</a>{/if}
+        <p>{t('home.noAccess')}</p>
       {/if}
-      <Button label={t('signin.signOut')} block onclick={signOut} />
     </section>
   {:else if sentTo}
     <section class="card">
@@ -58,6 +60,7 @@
     </form>
   {/if}
 </main>
+{/if}
 
 <style>
   main {

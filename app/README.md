@@ -34,7 +34,13 @@ To sign in locally, enter `task.master@example.test` and open the magic link in 
 
 - `src/routes/`: the pages. The top bar with the language switcher is in the layout, so it is on every page.
 - `src/lib/`: the Supabase client and the signed-in state.
-- `src/routes/staff/`: the Staff list. A Task Master adds, removes, promotes and demotes there.
+- `src/lib/Overview.svelte`: the Staff landing page: the Task list by status, My Tasks, and the New
+  Task panel. Its By Organization and Activity views and the search box are placeholders until
+  Organizations and the Timeline exist.
+- `src/routes/tasks/[id]/`: one Task. Its Owner and a Task Master edit the title, description and due
+  date there; the status and the Owner are never written directly (`../supabase/migrations/`).
+- `src/routes/staff/`: the Staff list. A Task Master adds, removes, promotes and demotes there, and
+  each Staff member sets the name shown on their Tasks.
 - `../supabase/functions/invite-staff/`: the invite function, the only place an account is created
   (`docs/adr/0003`). `supabase start` serves it; restart the stack after adding a function.
 - `scripts/seed.mjs`: the installation step that registers the first Task Master. Sign-up is closed
@@ -60,5 +66,5 @@ const again = await signIn(email);                                   // an accou
 Test files run one at a time (`--test-concurrency=1`): the test of the last remaining Task Master
 stands the other Task Masters down while it runs, and puts them back.
 
-The secret key is read from `supabase status` at run time and is only used to arrange users. It is
+The secret key is read from `supabase status` at run time and is only used to arrange: users, and a Task's status until the status functions exist. It is
 never written to a file.

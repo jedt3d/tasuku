@@ -170,4 +170,9 @@ export default {
   'staff.addAgain': 'เพิ่มอีกครั้ง',
   'staff.confirmRemove': 'ถอด {email} ออกหรือไม่ เขาจะหมดสิทธิ์เข้าถึงทันที',
   'staff.lastTaskMaster': 'Tasuku ต้องมี Task Master อย่างน้อยหนึ่งคน ตั้งคนอื่นเป็น Task Master ก่อน',
+  'common.save': 'บันทึก',
+  'task.edit': 'แก้ไขรายละเอียด',
+  'task.notFound': 'ไม่พบ Task นี้',
+  'staff.name': 'ชื่อของคุณ',
+  'staff.nameHint': 'แสดงใน Task ของคุณแทนอีเมล',
 };
