@@ -10,9 +10,17 @@
     disabled = false,
     disabledReason = '',
     attach = true, // false where files cannot be attached
+    files = $bindable([]), // the File objects chosen, sent with the comment
     sendLabel,
     onsend,
   } = $props();
+
+  let picker = $state();
+
+  function pick() {
+    files = [...files, ...picker.files];
+    picker.value = ''; // so the same file can be chosen again after it is taken off
+  }
 </script>
 
 <div class="composer" class:disabled>
@@ -20,14 +28,31 @@
     <p class="locked"><Icon name="lock" size={15} /> {disabledReason}</p>
   {:else}
     <textarea rows="2" placeholder={placeholder ?? t('composer.placeholder')} bind:value></textarea>
+    {#if attach && files.length}
+      <ul class="chosen">
+        {#each files as file, i (i)}
+          <li>
+            {file.name}
+            <button
+              class="attach small"
+              aria-label={t('composer.removeFile', { name: file.name })}
+              onclick={() => (files = files.filter((other) => other !== file))}><Icon name="x" size={14} /></button
+            >
+          </li>
+        {/each}
+      </ul>
+    {/if}
     <div class="bar">
       {#if attach}
-        <button class="attach" aria-label={t('composer.attach')}><Icon name="paperclip" /></button>
+        <input bind:this={picker} type="file" accept="image/*,application/pdf" multiple hidden onchange={pick} />
+        <button class="attach" aria-label={t('composer.attach')} onclick={() => picker.click()}
+          ><Icon name="paperclip" /></button
+        >
       {/if}
       <span class="warn">
         {#if attach}<Icon name="warning" size={14} /> {t('composer.warning')}{/if}
       </span>
-      <Button variant="primary" size="sm" icon="send" label={sendLabel ?? t('common.send')} onclick={() => onsend?.(value)} />
+      <Button variant="primary" size="sm" icon="send" label={sendLabel ?? t('common.send')} onclick={() => onsend?.(value, files)} />
     </div>
   {/if}
 </div>
@@ -80,6 +105,27 @@
     background: none;
     color: var(--c-text-2);
     cursor: pointer;
+  }
+  .attach.small {
+    width: 22px;
+    height: 22px;
+  }
+  .chosen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 16px;
+    list-style: none;
+    font-size: var(--fs-sm);
+  }
+  .chosen li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 10px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
   }
   .attach:hover {
     background: var(--c-surface-2);

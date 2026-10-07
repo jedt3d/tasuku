@@ -203,8 +203,8 @@ test('a Customer reads only the Tasks they are on, their Timelines, and their ow
   assert.deepEqual(await tasksOf(unregistered), []);
 
   assert.deepEqual(
-    (await read(customer, 'timeline_entries', 'task_id, kind')).map((entry) => entry.kind),
-    ['opened', 'comment', 'moved', 'collaborator_added', 'customer_added'],
+    (await read(customer, 'timeline_entries', 'task_id, kind')).map((entry) => entry.kind).sort(),
+    ['collaborator_added', 'comment', 'customer_added', 'moved', 'opened'], // read in no order
   );
   assert.deepEqual([...new Set((await read(colleague, 'timeline_entries', 'task_id')).map((e) => e.task_id))], [theirs.id]);
   assert.deepEqual(await read(unregistered, 'timeline_entries'), []);
