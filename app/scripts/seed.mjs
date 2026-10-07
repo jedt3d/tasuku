@@ -23,7 +23,7 @@ export async function seedTaskMaster(admin, address) {
 
   const { error } = await admin
     .from('staff')
-    .upsert({ user_id: user.id, email, is_task_master: true }, { onConflict: 'user_id' });
+    .upsert({ user_id: user.id, email, is_task_master: true, removed_at: null }, { onConflict: 'user_id' });
   if (error) throw error;
 }
 

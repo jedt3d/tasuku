@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { admin, signInAs, uniqueEmail } from './helpers.mjs';
+import { seedTaskMaster } from '../scripts/seed.mjs';
 
 const REFUSED = '42501';
 const LAST_TASK_MASTER = 'TSK01';
@@ -17,11 +18,20 @@ const record = async (reader, email) => {
 };
 
 const actors = async () => {
-  const taskMaster = await signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
+  const taskMasterEmail = uniqueEmail('tm');
+  const taskMaster = await signInAs(taskMasterEmail, { staff: { taskMaster: true } });
   const staffEmail = uniqueEmail('staff');
   const staff = await signInAs(staffEmail, { staff: {} });
   const stranger = await signInAs(uniqueEmail('stranger'));
-  return { taskMaster, staff, staffEmail, stranger, staffId: (await record(taskMaster, staffEmail)).user_id };
+  return {
+    taskMaster,
+    taskMasterEmail,
+    taskMasterId: (await record(taskMaster, taskMasterEmail)).user_id,
+    staff,
+    staffEmail,
+    stranger,
+    staffId: (await record(taskMaster, staffEmail)).user_id,
+  };
 };
 
 test('a Task Master promotes a Staff member to Task Master and demotes them again', async () => {
@@ -60,13 +70,29 @@ test('a removed Task Master can no longer manage Staff', async () => {
 
   const { error } = await former.rpc('set_task_master', { staff_id: staffId, value: true });
   assert.equal(error?.code, REFUSED);
+  const invited = await former.functions.invoke('invite-staff', { body: { email: uniqueEmail('wanted') } });
+  assert.equal(invited.error?.context?.status, 403);
+});
+
+test('the installation step brings a removed Task Master back', async () => {
+  const { taskMaster } = await actors();
+  const email = uniqueEmail('installer');
+  const installer = await signInAs(email, { staff: { taskMaster: true } });
+  await taskMaster.rpc('remove_staff', { staff_id: (await record(taskMaster, email)).user_id });
+
+  await seedTaskMaster(admin, email);
+
+  assert.equal((await record(installer, email)).is_task_master, true);
 });
 
 test('a Staff member who is not a Task Master cannot promote, demote or remove anyone', async () => {
-  const { taskMaster, staff, staffEmail, staffId } = await actors();
+  const { taskMaster, taskMasterEmail, taskMasterId, staff, staffEmail, staffId } = await actors();
 
   assert.equal((await staff.rpc('set_task_master', { staff_id: staffId, value: true })).error?.code, REFUSED);
   assert.equal((await staff.rpc('remove_staff', { staff_id: staffId })).error?.code, REFUSED);
+  assert.equal((await staff.rpc('set_task_master', { staff_id: taskMasterId, value: false })).error?.code, REFUSED);
+  assert.equal((await staff.rpc('remove_staff', { staff_id: taskMasterId })).error?.code, REFUSED);
+  assert.equal((await record(taskMaster, taskMasterEmail)).is_task_master, true);
   const direct = await staff.from('staff').update({ is_task_master: true, removed_at: null }).eq('user_id', staffId);
   assert.notEqual(direct.error, null);
 
@@ -74,10 +100,12 @@ test('a Staff member who is not a Task Master cannot promote, demote or remove a
 });
 
 test('a signed-in email that is not registered cannot promote or remove anyone', async () => {
-  const { taskMaster, stranger, staffEmail, staffId } = await actors();
+  const { taskMaster, taskMasterEmail, taskMasterId, stranger, staffEmail, staffId } = await actors();
 
   assert.equal((await stranger.rpc('set_task_master', { staff_id: staffId, value: true })).error?.code, REFUSED);
   assert.equal((await stranger.rpc('remove_staff', { staff_id: staffId })).error?.code, REFUSED);
+  assert.equal((await stranger.rpc('remove_staff', { staff_id: taskMasterId })).error?.code, REFUSED);
+  assert.equal((await record(taskMaster, taskMasterEmail)).is_task_master, true);
 
   assert.deepEqual(await record(taskMaster, staffEmail), { user_id: staffId, is_task_master: false, removed_at: null });
 });

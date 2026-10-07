@@ -48,7 +48,7 @@ Deno.serve(async (request) => {
   const created = await admin.auth.admin.createUser({ email, email_confirm: true });
   if (created.error && created.error.code !== 'email_exists') {
     console.error('createUser:', created.error.message);
-    return reply(created.error.status === 422 ? 400 : 500, created.error.status === 422 ? 'invalid_email' : 'failed');
+    return reply(500, 'failed');
   }
   const registered = await admin.rpc('register_staff', { staff_email: email });
   if (registered.error || !registered.data) {

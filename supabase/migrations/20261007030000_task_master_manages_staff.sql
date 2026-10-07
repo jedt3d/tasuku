@@ -43,17 +43,18 @@ create policy "staff set own language" on public.staff
 -- columns: a column privilege belongs to a role, not to a policy, so granting `is_task_master` to
 -- `authenticated` would let any Staff member promote themselves through the language policy.
 
--- Refuses the caller unless they are a Task Master, then holds off every other change to `staff`
--- until the transaction ends, so two Task Masters cannot stand each other down at the same moment.
+-- Holds off every other change to `staff` until the transaction ends, then refuses the caller
+-- unless they are a Task Master. The lock comes first: a Task Master who was removed while waiting
+-- for it must be refused, and two Task Masters must not stand each other down at the same moment.
 -- ponytail: a table lock, fine for about 10 Staff; lock only the Task Master rows if that grows.
 create function private.begin_staff_change() returns void
   language plpgsql security definer set search_path = ''
   as $$
   begin
+    lock table public.staff in share row exclusive mode;
     if not private.is_task_master() then
       raise exception 'only a Task Master manages Staff' using errcode = '42501';
     end if;
-    lock table public.staff in share row exclusive mode;
   end;
   $$;
 
