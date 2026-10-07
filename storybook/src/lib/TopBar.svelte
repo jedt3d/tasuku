@@ -13,11 +13,13 @@
     wordmark = true,
     // minimal: no navigation, used for Customers and the sign-in page.
     minimal = false,
+    // links: where each nav id (and `home`, the brand) leads. Without one, a prototype anchor.
+    links = {},
   } = $props();
 </script>
 
 <header class="topbar">
-  <a class="brand" href="#top">
+  <a class="brand" href={links.home ?? '#top'}>
     <img class="logo" src={logo} alt={wordmark ? '' : 'Tasuku'} />
     {#if wordmark}<span class="name">Tasuku</span>{/if}
   </a>
@@ -25,7 +27,7 @@
   {#if !minimal}
     <nav>
       {#each nav as id (id)}
-        <a href="#{id}" class:active={id === active}>{t(`nav.${id}`)}</a>
+        <a href={links[id] ?? `#${id}`} class:active={id === active}>{t(`nav.${id}`)}</a>
       {/each}
     </nav>
   {/if}

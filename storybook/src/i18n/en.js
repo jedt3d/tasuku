@@ -168,4 +168,9 @@ export default {
   'staff.addAgain': 'Add again',
   'staff.confirmRemove': 'Remove {email}? They lose access immediately.',
   'staff.lastTaskMaster': 'Tasuku needs at least one Task Master. Make someone else a Task Master first.',
+  'common.save': 'Save',
+  'task.edit': 'Edit details',
+  'task.notFound': 'This Task does not exist.',
+  'staff.name': 'Your name',
+  'staff.nameHint': 'Shown on your Tasks in place of your email.',
 };

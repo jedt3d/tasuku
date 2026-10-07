@@ -3,13 +3,14 @@
   import Button from '@ui/lib/Button.svelte';
   import Field from '@ui/lib/Field.svelte';
   import { t } from '@ui/i18n/index.svelte.js';
-  import { auth } from '#lib/session.svelte.js';
+  import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
   // Every Staff member may read this list; only a Task Master is offered the actions. The buttons
   // are a convenience: the database and the invite function refuse everyone else (ADR 0002, 0003).
   let people = $state([]);
   let email = $state('');
+  let name = $state(auth.staff?.name ?? '');
   let problem = $state(''); // a message key, or '' when there is nothing to report
   let busy = $state(false);
 
@@ -18,7 +19,7 @@
   async function refresh() {
     const { data, error } = await supabase
       .from('staff')
-      .select('user_id, email, is_task_master, removed_at')
+      .select('user_id, name, email, is_task_master, removed_at')
       .order('email');
     if (error) problem = 'common.error';
     else people = data;
@@ -55,6 +56,18 @@
     if (!problem) email = '';
   }
 
+  const rename = (value) => async () => {
+    const { error } = await supabase.from('staff').update({ name: value }).eq('user_id', auth.userId);
+    if (error) return 'common.error';
+    auth.staff.name = value;
+    return '';
+  };
+
+  function saveName(event) {
+    event.preventDefault();
+    change(rename(name.trim()));
+  }
+
   const setTaskMaster = (person, value) =>
     change(rpc('set_task_master', { staff_id: person.user_id, value }), person.user_id === auth.userId);
 
@@ -76,6 +89,10 @@
     {#if !auth.staff}
       <p>{t('home.noAccess')}</p>
     {:else}
+      <form onsubmit={saveName}>
+        <Field label={t('staff.name')} icon="user" hint={t('staff.nameHint')} bind:value={name} />
+        <Button type="submit" label={t('common.save')} disabled={busy} />
+      </form>
       {#if isTaskMaster}
         <form onsubmit={add}>
           <Field
@@ -95,7 +112,8 @@
         {#each people as person (person.user_id)}
           <li class:removed={person.removed_at}>
             <span class="who">
-              <span class="email">{person.email}</span>
+              <span class="email">{displayName(person)}</span>
+              {#if person.name}<span class="address">{person.email}</span>{/if}
               {#if person.user_id === auth.userId}<Badge tone="blue" label={t('staff.you')} dot={false} />{/if}
               {#if person.is_task_master}<Badge tone="green" label={t('staff.taskMaster')} />{/if}
               {#if person.removed_at}<Badge tone="red" label={t('staff.removed')} />{/if}
@@ -188,6 +206,10 @@
   }
   .email {
     font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .address {
+    color: var(--c-text-3);
     overflow-wrap: anywhere;
   }
   .removed .email {

@@ -170,4 +170,9 @@ export default {
   'staff.addAgain': '再追加',
   'staff.confirmRemove': '{email} を削除しますか？ただちにアクセスできなくなります。',
   'staff.lastTaskMaster': 'Tasuku にはタスクマスターが少なくとも 1 人必要です。先に別の人をタスクマスターにしてください。',
+  'common.save': '保存',
+  'task.edit': '詳細を編集',
+  'task.notFound': 'このタスクは存在しません。',
+  'staff.name': 'あなたの名前',
+  'staff.nameHint': 'メールアドレスの代わりにタスクに表示されます。',
 };

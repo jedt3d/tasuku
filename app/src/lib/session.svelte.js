@@ -33,7 +33,7 @@ async function load(session) {
     // A signed-in email that is not registered gets no row, and so no stored language.
     const { data, error } = await supabase
       .from('staff')
-      .select('is_task_master, language')
+      .select('name, is_task_master, language')
       .eq('user_id', userId)
       .maybeSingle();
     staff = data;
@@ -64,3 +64,6 @@ export function rememberLocale(code) {
 }
 
 export const signOut = () => supabase.auth.signOut();
+
+// How a Staff member is shown: by the name they set, or by email until they set one.
+export const displayName = (person) => person.name || person.email;
