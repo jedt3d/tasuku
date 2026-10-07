@@ -1,6 +1,6 @@
 # 04-Task-Lifecycle
 
-Source: CONTEXT.md. Colour key: blue = being tracked, yellow = waiting for agreement, green = finished.
+Source: Spec #1 (GitHub issue) transition table, CONTEXT.md. Colour key: grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned.
 
 ```mermaid
 ---
@@ -80,15 +80,25 @@ config:
 ---
 stateDiagram-v2
   direction LR
-  state "Close proposed" as CloseProposed
-  [*] --> Open : Staff opens it from a Request
-  Open --> CloseProposed : Owner proposes closing
-  CloseProposed --> Finished : both sides agree
-  Finished --> [*]
-  note right of Open : While open, a Task Master can add Customers and the Owner can be handed over or reassigned
-  class Open blue
-  class CloseProposed yellow
-  class Finished green
+  state "In progress" as InProgress
+  [*] --> Open : Staff opens a Task
+  Open --> InProgress : first Staff comment
+  InProgress --> Resolved : Owner or Task Master
+  Resolved --> InProgress : Reopen, Customer or Task Master
+  Resolved --> Done : Customer, Task Master, or auto after 48 h
+  Open --> Done : Customer
+  InProgress --> Done : Customer
+  Open --> Cancelled : Customer, Owner or Task Master
+  InProgress --> Cancelled : Customer, Owner or Task Master
+  Done --> [*]
+  Cancelled --> [*]
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done
+  note right of Open : A Customer comment leaves the Task Open
+  class Open grey
+  class InProgress blue
+  class Resolved yellow
+  class Done green
+  class Cancelled lred
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -102,6 +112,6 @@ stateDiagram-v2
 
 ## Gaps to confirm
 
-- What does "both sides" mean (Owner and Customer?) and how is the agreement recorded?
-- What happens if the other side does not agree to close? Can a Task go back to Open, be reopened, or be cancelled?
-- State names Open, Close proposed and Finished are working labels; CONTEXT.md only says "tracked until both sides agree it is finished".
+- Done and Cancelled are terminal (spec #1 story 70). Cancelling a Resolved Task is not drawn: the spec table allows Cancelled only from Open and In progress.
+- Who may Reopen: CONTEXT.md does not say, spec #1 says Customer or Task Master, and v1-plan.md says Customer only.
+- The 48 h closure period (and the 24 h reminder before it) is a Task Master setting, see 09 and the spec.

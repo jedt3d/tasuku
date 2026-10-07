@@ -20,7 +20,7 @@
 </head>
 <body>
 <main>
-  <p class="legend">blue = being tracked, yellow = waiting for agreement, green = finished.</p>
+  <p class="legend">grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned.</p>
   <div class="diagram" id="out"></div>
   <script type="text/plain" id="src">
 ---
@@ -100,15 +100,25 @@ config:
 ---
 stateDiagram-v2
   direction LR
-  state "Close proposed" as CloseProposed
-  [*] --> Open : Staff opens it from a Request
-  Open --> CloseProposed : Owner proposes closing
-  CloseProposed --> Finished : both sides agree
-  Finished --> [*]
-  note right of Open : While open, a Task Master can add Customers and the Owner can be handed over or reassigned
-  class Open blue
-  class CloseProposed yellow
-  class Finished green
+  state "In progress" as InProgress
+  [*] --> Open : Staff opens a Task
+  Open --> InProgress : first Staff comment
+  InProgress --> Resolved : Owner or Task Master
+  Resolved --> InProgress : Reopen, Customer or Task Master
+  Resolved --> Done : Customer, Task Master, or auto after 48 h
+  Open --> Done : Customer
+  InProgress --> Done : Customer
+  Open --> Cancelled : Customer, Owner or Task Master
+  InProgress --> Cancelled : Customer, Owner or Task Master
+  Done --> [*]
+  Cancelled --> [*]
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done
+  note right of Open : A Customer comment leaves the Task Open
+  class Open grey
+  class InProgress blue
+  class Resolved yellow
+  class Done green
+  class Cancelled lred
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -118,8 +128,7 @@ stateDiagram-v2
   classDef green   fill:#d3e9e3,stroke:#099268,stroke-width:2px,color:#1d1d1d
   classDef lred    fill:#f4dadb,stroke:#f87777,stroke-width:2px,color:#1d1d1d
   classDef grey    fill:#eceef0,stroke:#9fa8b2,stroke-width:2px,color:#1d1d1d
-
-  </script>
+</script>
 </main>
 <script type="module">
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";

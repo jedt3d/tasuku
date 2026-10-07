@@ -1,10 +1,10 @@
-# 07-System-Boundary
+# 12-Deployment-Topology
 
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
+Source: docs/deploy.md (sections 1-3, status list) and ADR 0001. Colour key: grey = people and machines, blue = Cloudflare, violet = Supabase, yellow = temporary or not in place yet. The dotted lines are open steps or one-off checks.
 
 ```mermaid
 ---
-title: 07-System-Boundary
+title: 12-Deployment-Topology
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -79,28 +79,36 @@ config:
     curve: basis
 ---
 flowchart TB
-  subgraph outside["Outside PSP"]
+  subgraph people["People and machines"]
     direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
+    user(["Staff or Customer<br/>in a browser"]):::grey
+    dev(["Developer machine"]):::grey
+    devserver["Dev server<br/>localhost:5173"]:::grey
   end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
+  subgraph cf["Cloudflare"]
     direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
+    dns["DNS zone servicework.cloud<br/>record made by the Custom Domain"]:::blue
+    worker["Worker tasuku<br/>static assets, SPA fallback<br/>no workers.dev address"]:::blue
   end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
+  subgraph supa["Supabase cloud, ap-southeast-1"]
     direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
+    auth["Auth<br/>Site URL and redirect allow list"]:::violet
+    db[("Postgres with RLS<br/>schema not applied yet")]:::yellow
   end
-  subgraph dev["Development of Tasuku"]
+  subgraph mail["Email"]
     direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
+    builtin["Supabase built-in sender<br/>org members only, 2 emails per hour"]:::yellow
+    mailgun[["Mailgun SMTP<br/>before real use"]]:::yellow
   end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
+  user -->|"tasuku.servicework.cloud"| dns
+  dns --> worker
+  user -->|"magic link, publishable key"| auth
+  user -->|"queries, RLS decides"| db
+  auth --> builtin
+  builtin -.->|"replaced by"| mailgun
+  dev -->|"npx wrangler deploy"| worker
+  dev -.->|"supabase db push, open"| db
+  devserver -.->|"redirect allowed"| auth
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -114,6 +122,7 @@ flowchart TB
 
 ## Gaps to confirm
 
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+- How the build receives the Supabase URL and the publishable key (environment variables) is described but the build itself does not exist yet.
+- The seed of the first Task Master is 'to be written when #2 defines the seed'; it is not drawn.
+- The local Supabase stack from #2 is not drawn; deploy.md says it does not use the cloud redirect list.
+- Earlier diagrams named Cloudflare Pages; deploy.md line 12 says the deployed target is a Worker with static assets.

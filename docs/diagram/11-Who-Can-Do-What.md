@@ -1,10 +1,10 @@
-# 07-System-Boundary
+# 11-Who-Can-Do-What
 
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
+Source: Spec #1 (GitHub issue), ADR 0002, TaskScreen and CustomerTaskScreen in the Storybook. Colour key: grey = start, orange = question, blue = what that viewer may do, light red = no access. The five outcomes are the five roles ADR 0002 says to test.
 
 ```mermaid
 ---
-title: 07-System-Boundary
+title: 11-Who-Can-Do-What
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -78,29 +78,18 @@ config:
   flowchart:
     curve: basis
 ---
-flowchart TB
-  subgraph outside["Outside PSP"]
-    direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
-  end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
-    direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
-  end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
-    direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
-  end
-  subgraph dev["Development of Tasuku"]
-    direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
-  end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
+flowchart TD
+  start(["Signed-in person<br/>opens a Task"]):::grey --> isStaff{"Registered<br/>as Staff?"}:::orange
+  isStaff -->|"no"| isCust{"Customer<br/>on this Task?"}:::orange
+  isCust -->|"no"| none(["Sees nothing"]):::lred
+  isCust -->|"yes"| cust["Customer<br/>Reads the Timeline, never a Thread<br/>Comments and attaches files<br/>Marks Done, Reopens a Resolved Task<br/>Cancels until it is Resolved"]:::blue
+  isStaff -->|"yes"| isMaster{"Task Master?"}:::orange
+  isMaster -->|"yes"| master["Task Master<br/>Reads every Task, acts on any Task<br/>Adds Collaborators, reassigns the Owner<br/>Resolve, Done, Reopen, Cancel<br/>Deletes a comment, leaving a marker"]:::blue
+  isMaster -->|"no"| isOwner{"Owner of<br/>this Task?"}:::orange
+  isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
+  isOwner -->|"no"| isCollab{"Collaborator<br/>on this Task?"}:::orange
+  isCollab -->|"yes"| collab["Collaborator<br/>Reads every Task<br/>Comments and attaches files<br/>Cannot propose closing"]:::blue
+  isCollab -->|"no"| reader["Other Staff<br/>Reads every Task, read-only"]:::blue
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -114,6 +103,7 @@ flowchart TB
 
 ## Gaps to confirm
 
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+- Whether one email can be both Staff and Customer is not described.
+- A Task Master who is also the Owner is drawn as Task Master, who can do everything an Owner can.
+- The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54).
+- Whether a Collaborator may remove themselves is not covered by the spec.
