@@ -94,11 +94,12 @@ flowchart TB
     direction LR
     auth["Auth<br/>Site URL and redirect allow list"]:::violet
     db[("Postgres with RLS<br/>schema not applied yet")]:::yellow
+    fn["Edge Function send-emails<br/>not deployed yet"]:::yellow
   end
   subgraph mail["Email"]
     direction LR
     builtin["Supabase built-in sender<br/>org members only, 2 emails per hour"]:::yellow
-    mailgun[["Mailgun SMTP<br/>before real use"]]:::yellow
+    mailgun[["Mailgun<br/>SMTP for Auth, HTTP API for notifications<br/>before real use"]]:::yellow
   end
   user -->|"tasuku.servicework.cloud"| dns
   dns --> worker
@@ -106,6 +107,8 @@ flowchart TB
   user -->|"queries, RLS decides"| db
   auth --> builtin
   builtin -.->|"replaced by"| mailgun
+  db -.->|"outbox, pg_net and pg_cron"| fn
+  fn -.->|"HTTP API, open"| mailgun
   dev -->|"npx wrangler deploy"| worker
   dev -.->|"supabase db push, open"| db
   devserver -.->|"redirect allowed"| auth
@@ -122,6 +125,7 @@ flowchart TB
 
 ## Gaps to confirm
 
+- Notification emails (#10, deploy.md section 8) never use the built-in sender: the database calls the Edge Function `send-emails`, which sends through Mailgun's HTTP API because Edge Functions cannot open ports 25 and 587. Nothing of it is on the cloud project yet. The two invite functions (deploy.md section 6) are still not drawn.
 - The build exists since #2 (`app/`): it takes the Supabase URL and the publishable key from environment variables and refuses to run without them. It has not been deployed to the Worker yet.
 - The seed of the first Task Master is a script (`app/scripts/seed.mjs`, deploy.md section 5); it has not been run against the cloud project and is not drawn.
 - The local Supabase stack from #2 is not drawn; deploy.md says it does not use the cloud redirect list.

@@ -89,6 +89,7 @@ flowchart LR
   signup["Turn off<br/>new sign-ups"]:::blue
   session["Sessions time-boxed to 7 days<br/>needs the Pro plan"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
+  emails["Deploy send-emails<br/>its secrets and Vault"]:::blue
   cf --> app
   auth --> seed
   schema --> seed
@@ -98,6 +99,8 @@ flowchart LR
   invite --> signup
   auth --> session
   seed -.->|"before real use"| mailgun
+  schema --> emails
+  mailgun -.->|"API key"| emails
 
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
@@ -112,6 +115,7 @@ flowchart LR
 
 ## Gaps to confirm
 
+- Notification emails (#10) are a box of their own in deploy.md (section 8): the function `send-emails`, its secrets and two Vault secrets. It needs a Mailgun API key, which is not the SMTP password of the Mailgun box.
 - Sign-ups can only be turned off once the invite functions are deployed (`invite-staff` and, since #7, `invite-customer`; deploy.md section 6); before that nobody new could be added.
 - The 7-day session setting needs the Supabase Pro plan; on the Free plan a session never expires (deploy.md section 7).
 - The first Task Master must be a Supabase organization member while the built-in email sender is in use (deploy.md section 3), so the seed step is also gated on that.

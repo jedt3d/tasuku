@@ -114,11 +114,12 @@ flowchart TB
     direction LR
     auth["Auth<br/>Site URL and redirect allow list"]:::violet
     db[("Postgres with RLS<br/>schema not applied yet")]:::yellow
+    fn["Edge Function send-emails<br/>not deployed yet"]:::yellow
   end
   subgraph mail["Email"]
     direction LR
     builtin["Supabase built-in sender<br/>org members only, 2 emails per hour"]:::yellow
-    mailgun[["Mailgun SMTP<br/>before real use"]]:::yellow
+    mailgun[["Mailgun<br/>SMTP for Auth, HTTP API for notifications<br/>before real use"]]:::yellow
   end
   user -->|"tasuku.servicework.cloud"| dns
   dns --> worker
@@ -126,6 +127,8 @@ flowchart TB
   user -->|"queries, RLS decides"| db
   auth --> builtin
   builtin -.->|"replaced by"| mailgun
+  db -.->|"outbox, pg_net and pg_cron"| fn
+  fn -.->|"HTTP API, open"| mailgun
   dev -->|"npx wrangler deploy"| worker
   dev -.->|"supabase db push, open"| db
   devserver -.->|"redirect allowed"| auth
