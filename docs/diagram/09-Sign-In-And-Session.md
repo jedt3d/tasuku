@@ -120,7 +120,7 @@ sequenceDiagram
 ## Gaps to confirm
 
 - How the session length differs between Staff and Customer is not described (spec #1 gives only the two durations).
-- What a person with no access sees (an empty page or a message) is not decided.
-- Whether the sign-in page tells a person that their email has no account, or always says "check your email", is not decided.
+- A signed-in person with no access sees a message that the email has no access to any Task yet (#2).
+- The sign-in page built in #2 tells a person that their email is not registered, instead of always saying "check your email". This awaits confirmation in PR #17.
 - Magic link lifetime and rate limits are not described.
-- Installation seeding of the first Task Master (story 7) and the Task Master registering Staff emails (story 9) use the same invite function; they are separate flows, not drawn.
+- Installation seeding of the first Task Master (story 7) is a script run with the secret key (`app/scripts/seed.mjs`), not the invite function. The Task Master registering Staff emails (story 9) uses the invite function from #3. Both are separate flows, not drawn.

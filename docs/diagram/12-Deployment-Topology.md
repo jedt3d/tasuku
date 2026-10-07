@@ -122,7 +122,7 @@ flowchart TB
 
 ## Gaps to confirm
 
-- How the build receives the Supabase URL and the publishable key (environment variables) is described but the build itself does not exist yet.
-- The seed of the first Task Master is 'to be written when #2 defines the seed'; it is not drawn.
+- The build exists since #2 (`app/`): it takes the Supabase URL and the publishable key from environment variables and refuses to run without them. It has not been deployed to the Worker yet.
+- The seed of the first Task Master is a script (`app/scripts/seed.mjs`, deploy.md section 5); it has not been run against the cloud project and is not drawn.
 - The local Supabase stack from #2 is not drawn; deploy.md says it does not use the cloud redirect list.
 - Earlier diagrams named Cloudflare Pages; deploy.md line 12 says the deployed target is a Worker with static assets.
