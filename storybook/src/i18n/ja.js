@@ -151,4 +151,11 @@ export default {
   'signin.sentTitle': 'メールをご確認ください',
   'signin.sentBody': '{email} にサインイン用のリンクを送信しました。リンクを開いて続行してください。',
   'signin.other': '別のメールアドレスを使う',
+  'signin.error': 'リンクを送信できませんでした。しばらくしてからもう一度お試しください。',
+  'signin.signOut': 'サインアウト',
+  'home.title': 'ホーム',
+  'home.empty': 'まだ何もありません。',
+  'home.noAccess': 'このメールアドレスは、まだどのタスクにもアクセスできません。',
+  'signin.unknown': 'このメールアドレスは登録されていません。アドレスをご確認いただくか、PSP に登録をご依頼ください。',
+  'common.error': 'エラーが発生しました。ページを再読み込みしてもう一度お試しください。',
 };

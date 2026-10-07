@@ -149,4 +149,11 @@ export default {
   'signin.sentTitle': 'Check your email',
   'signin.sentBody': 'We sent a sign-in link to {email}. Open it to continue.',
   'signin.other': 'Use a different email',
+  'signin.error': 'We could not send the link. Try again in a moment.',
+  'signin.signOut': 'Sign out',
+  'home.title': 'Home',
+  'home.empty': 'Nothing here yet.',
+  'home.noAccess': 'This email has no access to any Task yet.',
+  'signin.unknown': 'This email is not registered. Check the address, or ask PSP to add you.',
+  'common.error': 'Something went wrong. Reload the page to try again.',
 };
