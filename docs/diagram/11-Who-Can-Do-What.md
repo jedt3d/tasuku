@@ -84,9 +84,9 @@ flowchart TD
   isCust -->|"no"| none(["Sees nothing"]):::lred
   isCust -->|"yes"| cust["Customer<br/>Reads the Timeline, never a Thread<br/>Comments and attaches files<br/>Marks Done, Reopens a Resolved Task<br/>Cancels until it is Resolved"]:::blue
   isStaff -->|"yes"| isMaster{"Task Master?"}:::orange
-  isMaster -->|"yes"| master["Task Master<br/>Reads every Task, acts on any Task<br/>Adds Collaborators, reassigns the Owner<br/>Resolve, Done, Reopen, Cancel<br/>Deletes a comment, leaving a marker"]:::blue
+  isMaster -->|"yes"| master["Task Master<br/>Reads every Task, acts on any Task<br/>Adds Collaborators, chooses the Customer<br/>Reassigns the Owner<br/>Resolve, Done, Reopen, Cancel<br/>Deletes a comment, leaving a marker"]:::blue
   isMaster -->|"no"| isOwner{"Owner of<br/>this Task?"}:::orange
-  isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
+  isOwner -->|"yes"| owner["Owner<br/>Comments and attaches files<br/>Mark Resolved, Cancel<br/>Adds and removes Collaborators<br/>Adds, replaces and removes the Customer<br/>Deletes an attachment<br/>Done alone if no Customer"]:::blue
   isOwner -->|"no"| isCollab{"Collaborator<br/>on this Task?"}:::orange
   isCollab -->|"yes"| collab["Collaborator<br/>Reads every Task<br/>Comments, attaches files, edits details<br/>Cannot change the Owner, close or cancel<br/>Does not manage who is on the Task"]:::blue
   isCollab -->|"no"| reader["Other Staff<br/>Reads every Task, read-only"]:::blue
@@ -103,7 +103,9 @@ flowchart TD
 
 ## Gaps to confirm
 
-- Whether one email can be both Staff and Customer is not described.
+- One email can be both Staff and Customer: a Staff member's email can be added as the Customer of a Task, and what they write there counts as Staff's (decided by the user in #7). Such a person is drawn on the Staff side.
+- As built in #7, any Staff member sets a Customer's Organization, and a Customer sees the names of the Staff on their Task but never an email (both decided by the user, 7 Oct 2026). Neither is drawn.
+- As built in #7, a Customer's comment leaves an Open Task Open, and a Customer edits their own comment for 15 minutes. Marking Done, Reopen, Cancel and attachments in the Customer box are not built yet (#8, #9).
 - A Task Master who is also the Owner is drawn as Task Master, who can do everything an Owner can.
 - The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54).
 - Whether a Collaborator may remove themselves is not covered by the spec. As built in #6 they cannot: only the Owner and a Task Master remove a Collaborator (confirmed by the user, 7 Oct 2026).
