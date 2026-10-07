@@ -48,6 +48,11 @@ stay in English (Task, Timeline, Thread, Owner, Resolved): people in technical w
 than a translation. In Japanese they become the usual katakana loanwords (タスク, タイムライン).
 Translate the sentence around the term, not the term.
 
+**Reviewing translations.** The `Localisation/Translations` page lists every text in the three
+languages side by side. It is for comparing only: the published site is read-only and cannot save
+back to GitHub. To change a text, edit the language file (in an editor, or with the pencil icon on
+GitHub) and commit; the site rebuilds itself. Change the text only, never a key or a `{placeholder}`.
+
 **Mock data.** Every person and Organization in `src/lib/mock.js` is fictional. This repository is
 public: never put real Customer data here.
 

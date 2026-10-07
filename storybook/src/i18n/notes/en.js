@@ -245,4 +245,32 @@ export default {
     ],
     use: ['The phone frame is only for viewing on a desktop canvas; pass `framed={false}` to fill the screen.'],
   },
+
+  translations: {
+    title: 'Translations',
+    purpose: 'Shows every piece of text in the three languages side by side, for reviewing translations.',
+    why: [
+      'A reviewer needs the three languages next to each other. The language files show one language at a time.',
+      'It is read-only on purpose. This website is static and has no way to save a change back to GitHub, so an edit box here would only lose the work.',
+      'Rows identical to English are marked. In Thai many domain terms are kept in English deliberately, and a reviewer must be able to tell deliberate from forgotten.',
+    ],
+    use: [
+      'To change a text, open the language file on GitHub from the links on the page, edit it and commit. The build then checks that all three languages still have the same keys and placeholders.',
+      'Change only the text. Never change a key or a `{placeholder}`.',
+    ],
+  },
+
+  // Labels of the Translations page itself.
+  translationsPage: {
+    notice:
+      'This page is for comparing only. Nothing can be edited here: this is a read-only website and it cannot save anything back to GitHub.',
+    how: 'To change a translation, edit the language file on GitHub. The site rebuilds by itself a minute or two after the change is committed.',
+    files: 'Language files',
+    search: 'Search keys and text…',
+    key: 'Key',
+    same: 'Same as English',
+    sameOnly: 'Only rows identical to English',
+    mismatch: 'Placeholders differ from English',
+    count: '{shown} of {total} rows',
+  },
 };

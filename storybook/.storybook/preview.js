@@ -36,6 +36,6 @@ export default {
   ],
   parameters: {
     layout: 'padded',
-    options: { storySort: { order: ['Foundations', 'Components', 'Prototypes'] } },
+    options: { storySort: { order: ['Foundations', 'Components', 'Prototypes', 'Localisation'] } },
   },
 };
