@@ -25,11 +25,11 @@ const removeCollaborator = async (client, task, staff) =>
 
 test('the Owner adds a Collaborator, and every Staff member reads who is on the Task', async () => {
   const owner = await staffMember();
-  const email = uniqueEmail('helper');
-  const helper = await signInAs(email, { staff: {} });
+  const email = uniqueEmail('collaborator');
+  const collaborator = await signInAs(email, { staff: {} });
   const task = await openTask(owner);
 
-  const added = await addCollaborator(owner, task, helper);
+  const added = await addCollaborator(owner, task, collaborator);
 
   assert.equal(added.error, null);
   const { data } = await (await staffMember())
@@ -39,70 +39,76 @@ test('the Owner adds a Collaborator, and every Staff member reads who is on the 
   assert.deepEqual(data, [{ staff: { name: '', email } }]);
 });
 
-test('a Collaborator comments on the Timeline and edits the details of the Task', async () => {
+test('a Collaborator comments on the Timeline, edits their comment and edits the details of the Task', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
 
-  const posted = await comment(helper, task, 'I can take the server room.');
-  const edited = await helper.from('tasks').update({ due_date: '2026-12-01' }).eq('id', task.id).select('due_date');
+  const posted = await comment(collaborator, task, 'I can take the server room.');
+  const reworded = await collaborator
+    .from('timeline_entries')
+    .update({ body: 'I can take the server room today.' })
+    .eq('id', posted.data.id)
+    .select('body');
+  const edited = await collaborator.from('tasks').update({ due_date: '2026-12-01' }).eq('id', task.id).select('due_date');
 
   assert.equal(posted.error, null);
+  assert.deepEqual(reworded.data, [{ body: 'I can take the server room today.' }]);
   assert.deepEqual(edited.data, [{ due_date: '2026-12-01' }]);
 });
 
 test('the Owner removes a Collaborator, who can then no longer write on the Task', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
 
-  const removed = await removeCollaborator(owner, task, helper);
+  const removed = await removeCollaborator(owner, task, collaborator);
 
   assert.equal(removed.data.length, 1);
   assert.deepEqual(await collaborators(owner, task), []);
-  assert.equal((await comment(helper, task)).error?.code, '42501');
-  assert.deepEqual((await helper.from('tasks').update({ title: 'Mine' }).eq('id', task.id).select()).data, []);
+  assert.equal((await comment(collaborator, task)).error?.code, '42501');
+  assert.deepEqual((await collaborator.from('tasks').update({ title: 'Mine' }).eq('id', task.id).select()).data, []);
 });
 
 test('a Task Master adds and removes a Collaborator on any Task', async () => {
   const task = await openTask(await staffMember());
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const master = await taskMaster();
 
-  const added = await addCollaborator(master, task, helper);
+  const added = await addCollaborator(master, task, collaborator);
   const onTask = await collaborators(master, task);
-  const removed = await removeCollaborator(master, task, helper);
+  const removed = await removeCollaborator(master, task, collaborator);
 
   assert.equal(added.error, null);
-  assert.deepEqual(onTask, [await userId(helper)]);
+  assert.deepEqual(onTask, [await userId(collaborator)]);
   assert.equal(removed.data.length, 1);
   assert.deepEqual(await collaborators(master, task), []);
 });
 
 test('a Collaborator and Staff who are not on the Task decide nothing about who is on it', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const reader = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
 
-  for (const client of [helper, reader]) {
+  for (const client of [collaborator, reader]) {
     assert.equal((await addCollaborator(client, task, reader)).error?.code, '42501');
-    assert.deepEqual((await removeCollaborator(client, task, helper)).data, []);
+    assert.deepEqual((await removeCollaborator(client, task, collaborator)).data, []);
   }
-  assert.deepEqual(await collaborators(owner, task), [await userId(helper)]);
+  assert.deepEqual(await collaborators(owner, task), [await userId(collaborator)]);
 });
 
 test('a Collaborator cannot change the Owner or the status of the Task', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
 
-  const handover = await helper.from('tasks').update({ owner_id: await userId(helper) }).eq('id', task.id);
-  const closing = await helper.from('tasks').update({ status: 'resolved' }).eq('id', task.id);
+  const handover = await collaborator.from('tasks').update({ owner_id: await userId(collaborator) }).eq('id', task.id);
+  const closing = await collaborator.from('tasks').update({ status: 'resolved' }).eq('id', task.id);
 
   assert.equal(handover.error?.code, '42501');
   assert.equal(closing.error?.code, '42501');
@@ -112,20 +118,20 @@ test('a Collaborator cannot change the Owner or the status of the Task', async (
 
 test('adding and removing a Collaborator appear on the Timeline, with who did it and to whom', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const master = await taskMaster();
   const task = await openTask(owner);
 
-  await addCollaborator(owner, task, helper);
-  await removeCollaborator(master, task, helper);
+  await addCollaborator(owner, task, collaborator);
+  await removeCollaborator(master, task, collaborator);
 
-  const { data } = await helper
+  const { data } = await collaborator
     .from('timeline_entries')
     .select('kind, author_id, subject_id, body, status')
     .eq('task_id', task.id)
     .order('created_at')
     .order('id');
-  const about = { subject_id: await userId(helper), body: null, status: null };
+  const about = { subject_id: await userId(collaborator), body: null, status: null };
   assert.deepEqual(data.slice(1), [
     { kind: 'collaborator_added', author_id: await userId(owner), ...about },
     { kind: 'collaborator_removed', author_id: await userId(master), ...about },
@@ -146,36 +152,37 @@ test('nobody writes a Collaborator event through the API', async () => {
 test('only Staff who are not already on the Task can be added to it', async () => {
   const email = uniqueEmail('leaver');
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const leaver = await signInAs(email, { staff: {} });
   const stranger = await signInAs(uniqueEmail('stranger'));
   const task = await openTask(owner);
   await admin.from('staff').update({ removed_at: new Date().toISOString() }).eq('email', email);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
 
   assert.equal((await addCollaborator(owner, task, owner)).error?.code, '42501');
   assert.equal((await addCollaborator(owner, task, leaver)).error?.code, '42501');
   assert.equal((await addCollaborator(owner, task, stranger)).error?.code, '42501');
-  assert.equal((await addCollaborator(owner, task, helper)).error?.code, '23505');
-  assert.deepEqual(await collaborators(owner, task), [await userId(helper)]);
+  assert.equal((await addCollaborator(owner, task, collaborator)).error?.code, '23505');
+  assert.deepEqual(await collaborators(owner, task), [await userId(collaborator)]);
 });
 
 test('nobody adds or removes a Collaborator on a Task that is Done or Cancelled', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const other = await staffMember();
   const master = await taskMaster();
 
   for (const status of ['done', 'cancelled']) {
     const task = await openTask(owner);
-    await addCollaborator(owner, task, helper);
+    await addCollaborator(owner, task, collaborator);
     await admin.from('tasks').update({ status }).eq('id', task.id);
 
     for (const client of [owner, master]) {
       assert.equal((await addCollaborator(client, task, other)).error?.code, '42501');
-      assert.deepEqual((await removeCollaborator(client, task, helper)).data, []);
+      assert.deepEqual((await removeCollaborator(client, task, collaborator)).data, []);
     }
-    assert.equal((await comment(helper, task)).error?.code, '42501');
+    assert.equal((await comment(collaborator, task)).error?.code, '42501');
+    assert.deepEqual((await collaborator.from('tasks').update({ title: 'Rewritten' }).eq('id', task.id).select()).data, []);
   }
 });
 

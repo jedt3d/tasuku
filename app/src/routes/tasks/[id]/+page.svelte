@@ -34,9 +34,9 @@
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
   const closed = $derived(['done', 'cancelled'].includes(task?.status));
   const canManage = $derived((task?.owner_id === auth.userId || isTaskMaster) && !closed);
-  const onTask = $derived(collaborators.map((c) => c.staff_id));
-  const canWrite = $derived(canManage || (onTask.includes(auth.userId) && !closed));
-  const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !onTask.includes(s.user_id)));
+  const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
+  const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
+  const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !collaboratorIds.includes(s.user_id)));
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
   // The entries as the Timeline component draws them.
@@ -55,7 +55,7 @@
         kind: 'comment',
         id: entry.id,
         author: actor,
-        role: entry.author_id === task?.owner_id ? 'owner' : onTask.includes(entry.author_id) ? 'collaborator' : undefined,
+        role: entry.author_id === task?.owner_id ? 'owner' : collaboratorIds.includes(entry.author_id) ? 'collaborator' : undefined,
         at: entry.created_at,
         text: entry.body,
         edited: Boolean(entry.edited_at),
@@ -164,9 +164,18 @@
   }
 
   async function removeCollaborator(staffId) {
-    const { error } = await supabase.from('task_collaborators').delete().eq('task_id', task.id).eq('staff_id', staffId);
-    if (error) return (problem = 'common.error');
+    if (busy) return;
+    busy = true;
+    const { data, error } = await supabase
+      .from('task_collaborators')
+      .delete()
+      .eq('task_id', task.id)
+      .eq('staff_id', staffId)
+      .select('staff_id');
+    busy = false;
     await refresh(page.params.id);
+    // A removal the database refuses deletes no row and reports no error.
+    if (error || !data.length) problem = 'common.error';
   }
 
   async function remove(entry) {
@@ -355,7 +364,7 @@
   .people li {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--s-1);
   }
   .none {
     color: var(--c-text-3);
@@ -386,7 +395,7 @@
   .add select {
     height: 32px;
     max-width: 100%;
-    padding: 0 8px;
+    padding: 0 var(--s-2);
     border: 1px solid var(--c-border-strong);
     border-radius: var(--r-md);
     background: var(--c-surface);
