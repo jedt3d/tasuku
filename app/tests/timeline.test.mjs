@@ -92,6 +92,29 @@ test('the first Staff comment on an Open Task moves it to In progress, once', as
   ]);
 });
 
+test('two first comments at the same moment record one move to In progress', async () => {
+  const owner = await staffMember();
+  const master = await taskMaster();
+  const task = await openTask(owner);
+
+  await Promise.all([comment(owner, task, 'Mine.'), comment(master, task, 'And mine.')]);
+
+  const kinds = (await timeline(owner, task)).map((entry) => entry.kind);
+  assert.deepEqual(kinds.toSorted(), ['comment', 'comment', 'moved', 'opened']);
+});
+
+test('a comment on a Resolved Task leaves it Resolved', async () => {
+  const owner = await staffMember();
+  const task = await openTask(owner);
+  await admin.from('tasks').update({ status: 'resolved' }).eq('id', task.id);
+
+  const posted = await comment(owner, task, 'One more detail.');
+
+  assert.equal(posted.error, null);
+  assert.equal(await statusOf(owner, task), 'resolved');
+  assert.deepEqual((await timeline(owner, task)).map((entry) => entry.kind), ['opened', 'comment']);
+});
+
 test('a Task Master comments on any Task', async () => {
   const task = await openTask(await staffMember());
   const master = await taskMaster();
@@ -122,11 +145,13 @@ test('an author edits their comment within 15 minutes, and not afterwards', asyn
   const { data: entry } = await comment(owner, task, 'Battery orderd.');
 
   const inTime = await edit(owner, entry, 'Battery ordered.');
+  const blank = await edit(owner, entry, ' \n ');
   const old = new Date(Date.now() - 16 * 60 * 1000).toISOString();
   await admin.from('timeline_entries').update({ created_at: old }).eq('id', entry.id);
   const tooLate = await edit(owner, entry, 'Rewritten later.');
 
   assert.equal(inTime.data[0].body, 'Battery ordered.');
+  assert.equal(blank.error?.code, '23514');
   assert.notEqual(inTime.data[0].edited_at, null);
   assert.deepEqual(tooLate.data, []);
   const kept = (await timeline(owner, task)).find((entry) => entry.kind === 'comment');
