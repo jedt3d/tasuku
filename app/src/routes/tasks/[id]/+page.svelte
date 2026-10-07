@@ -10,10 +10,13 @@
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
-  const columns = 'id, title, description, due_date, status, owner_id, owner:staff!owner_id(name, email)';
+  // Row Level Security leaves out of an answer what the reader may not read (ADR 0002): to a
+  // Customer the Owner, the Organization and every Staff member come back as null.
+  const columns =
+    'id, title, description, due_date, status, owner_id, customer_id, organization_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
 
   const entryColumns =
-    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email)';
+    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email)';
   // The database counts the same 15 minutes and has the last word (ADR 0002).
   const EDIT_WINDOW = 15 * 60 * 1000;
 
@@ -22,6 +25,10 @@
   let collaborators = $state([]); // { staff_id, staff: { name, email } }, in the order they were added
   let staff = $state([]); // every Staff member who has not been removed: who can be added
   let adding = $state(''); // the user id chosen in "Add Collaborator"
+  let organizations = $state([]); // every Organization, by name
+  let known = $state([]); // the Customer emails used before, offered again
+  let customerEmail = $state(''); // the email being typed in "Customer"
+  let names = $state({}); // for a Customer: the name of each Staff member on the Task, by user id
   let text = $state(''); // the comment being written
   let editing = $state(null); // the id of the comment being edited, or null when writing a new one
   let now = $state(Date.now()); // when the Timeline was last read: decides which comments offer "Edit"
@@ -36,6 +43,12 @@
   const canManage = $derived((task?.owner_id === auth.userId || isTaskMaster) && !closed);
   const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
   const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
+  // The Customer comments, and changes nothing else.
+  const canComment = $derived(canWrite || (task?.customer_id === auth.userId && !closed));
+  // A Customer reads no Staff record, only names; a Staff member who has set no name is "PSP" to them.
+  const staffName = (id, person) => (person ? displayName(person) : names[id] || 'PSP');
+  // A Customer reads no other Customer's record: the one before them is "Customer".
+  const customerName = (customer) => customer?.email ?? t('role.customer');
   const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !collaboratorIds.includes(s.user_id)));
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
@@ -47,12 +60,21 @@
     return entries.map((entry) => {
       if (entry.kind === 'collaborator_added') collaborating.add(entry.subject_id);
       if (entry.kind === 'collaborator_removed') collaborating.delete(entry.subject_id);
-      const actor = entry.author ? displayName(entry.author) : 'Tasuku';
+      const actor = entry.author_id
+        ? staffName(entry.author_id, entry.author)
+        : entry.kind === 'comment'
+          ? customerName(entry.customer)
+          : 'Tasuku';
       if (entry.kind === 'opened') return { kind: 'event', icon: 'plus', actor, key: 'event.opened', at: entry.created_at };
       if (entry.kind === 'moved') return { kind: 'event', actor, key: 'event.movedTo', status: entry.status, at: entry.created_at };
       if (entry.kind === 'collaborator_added' || entry.kind === 'collaborator_removed') {
         const key = entry.kind === 'collaborator_added' ? 'event.addedCollaborator' : 'event.removedCollaborator';
-        return { kind: 'event', icon: 'users', actor, key, vars: { name: displayName(entry.subject) }, at: entry.created_at };
+        const name = staffName(entry.subject_id, entry.subject);
+        return { kind: 'event', icon: 'users', actor, key, vars: { name }, at: entry.created_at };
+      }
+      if (entry.kind === 'customer_added' || entry.kind === 'customer_removed') {
+        const key = entry.kind === 'customer_added' ? 'event.addedCustomer' : 'event.removedCustomer';
+        return { kind: 'event', icon: 'users', actor, key, vars: { name: customerName(entry.customer) }, at: entry.created_at };
       }
       // The marker stands where the comment stood, so it carries the comment's time.
       if (entry.deleted_at) return { kind: 'deleted', at: entry.created_at };
@@ -60,11 +82,17 @@
         kind: 'comment',
         id: entry.id,
         author: actor,
-        role: entry.author_id === task?.owner_id ? 'owner' : collaborating.has(entry.author_id) ? 'collaborator' : undefined,
+        role: !entry.author_id
+          ? 'customer'
+          : entry.author_id === task?.owner_id
+            ? 'owner'
+            : collaborating.has(entry.author_id)
+              ? 'collaborator'
+              : undefined,
         at: entry.created_at,
         text: entry.body,
         edited: Boolean(entry.edited_at),
-        canEdit: canWrite && entry.author_id === auth.userId && now - Date.parse(entry.created_at) < EDIT_WINDOW,
+        canEdit: canComment && (entry.author_id ?? entry.customer_id) === auth.userId && now - Date.parse(entry.created_at) < EDIT_WINDOW,
         canDelete: isTaskMaster,
       };
     });
@@ -78,6 +106,7 @@
     entries = [];
     collaborators = [];
     adding = '';
+    customerEmail = '';
     text = '';
     editing = null;
     const numbered = /^\d+$/.test(id);
@@ -86,27 +115,40 @@
   }
 
   // Reads the Task with its Timeline and the people on it: a comment can move the Task to In
-  // progress, and adding a Collaborator writes an event.
+  // progress, and adding a Collaborator or a Customer writes an event. The lists a Staff member
+  // chooses from come back empty to a Customer, who is given the names of the Staff instead.
   async function refresh(id) {
-    const [found, timeline, people, everyone] = await Promise.all([
+    const [found, timeline, people, everyone, labels, emails, named] = await Promise.all([
       supabase.from('tasks').select(columns).eq('id', id).maybeSingle(),
       supabase.from('timeline_entries').select(entryColumns).eq('task_id', id).order('created_at').order('id'),
       supabase.from('task_collaborators').select('staff_id, staff:staff(name, email)').eq('task_id', id).order('added_at'),
       supabase.from('staff').select('user_id, name, email').is('removed_at', null).order('email'),
+      supabase.from('organizations').select('id, name').order('name'),
+      supabase.from('customers').select('email').order('email'),
+      auth.staff ? { data: [] } : supabase.rpc('staff_on_task', { task: id }),
     ]);
     if (id !== page.params.id) return; // the reader has moved on to another Task
-    const error = found.error ?? timeline.error ?? people.error ?? everyone.error;
+    const error =
+      found.error ?? timeline.error ?? people.error ?? everyone.error ?? labels.error ?? emails.error ?? named.error;
     problem = error ? 'common.error' : '';
     missing = !error && !found.data;
     task = found.data;
     entries = timeline.data ?? [];
     collaborators = people.data ?? [];
     staff = everyone.data ?? [];
+    organizations = labels.data ?? [];
+    known = emails.data ?? [];
+    names = Object.fromEntries((named.data ?? []).map((person) => [person.user_id, person.name]));
     now = Date.now();
   }
 
   const edit = () =>
-    (draft = { title: task.title, description: task.description, due_date: task.due_date ?? '' });
+    (draft = {
+      title: task.title,
+      description: task.description,
+      due_date: task.due_date ?? '',
+      organization_id: task.organization_id ?? '',
+    });
 
   async function save(event) {
     event.preventDefault();
@@ -117,6 +159,7 @@
         title: draft.title.trim(),
         description: draft.description.trim(),
         due_date: draft.due_date || null,
+        organization_id: draft.organization_id || null,
       })
       .eq('id', task.id)
       .select(columns)
@@ -183,6 +226,38 @@
     if (error || !data.length) problem = 'common.error';
   }
 
+  // Through the invite function: an email Tasuku has never seen needs an account first (ADR 0003).
+  async function setCustomer(event) {
+    event.preventDefault();
+    const email = customerEmail.trim();
+    if (busy || !email) return;
+    busy = true;
+    const { error } = await supabase.functions.invoke('invite-customer', { body: { task_id: task.id, email } });
+    busy = false;
+    if (error) return (problem = error.context?.status === 400 ? 'staff.invalidEmail' : 'common.error');
+    customerEmail = '';
+    await refresh(page.params.id);
+  }
+
+  async function removeCustomer() {
+    if (busy) return;
+    busy = true;
+    const { error } = await supabase.rpc('remove_customer', { task: task.id });
+    busy = false;
+    await refresh(page.params.id);
+    if (error) problem = 'common.error';
+  }
+
+  // The Organization belongs to the Customer, not to this Task: it shows on every Task they are on.
+  async function setCustomerOrganization(id) {
+    const { error } = await supabase.rpc('set_customer_organization', {
+      customer: task.customer.user_id,
+      organization: id ? Number(id) : null,
+    });
+    await refresh(page.params.id);
+    if (error) problem = 'common.error';
+  }
+
   async function remove(entry) {
     if (!confirm(t('timeline.confirmDelete'))) return;
     const { error } = await supabase.rpc('delete_comment', { entry_id: entry.id });
@@ -192,16 +267,16 @@
   }
 
   $effect(() => {
-    if (auth.staff) load(page.params.id);
+    if (auth.staff || auth.customer) load(page.params.id);
   });
 </script>
 
 <main>
   <section class="card">
-    <a href="/">← {t('nav.overview')}</a>
+    <a href="/">← {t(auth.staff ? 'nav.overview' : 'customer.myTasks')}</a>
     {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
 
-    {#if !auth.staff}
+    {#if !auth.staff && !auth.customer}
       <p>{t('home.noAccess')}</p>
     {:else if missing}
       <p>{t('task.notFound')}</p>
@@ -210,6 +285,15 @@
         <Field label={t('new.title')} bind:value={draft.title} />
         <Field label={t('new.description')} type="textarea" bind:value={draft.description} />
         <Field label={t('task.dueDate')} type="date" action={t('common.optional')} bind:value={draft.due_date} />
+        <label class="choice">
+          {t('task.organization')}
+          <select bind:value={draft.organization_id}>
+            <option value="">{t('new.orgNone')}</option>
+            {#each organizations as { id, name } (id)}
+              <option value={id}>{name}</option>
+            {/each}
+          </select>
+        </label>
         <div class="actions">
           <Button type="button" label={t('common.cancel')} onclick={() => (draft = null)} />
           <Button type="submit" variant="primary" label={t('common.save')} disabled={busy || !complete} />
@@ -221,14 +305,74 @@
         <span>{t('task.number', { id: `#${task.id}` })}</span>
         {#if canWrite}
           <Button size="sm" icon="edit" label={t('task.edit')} onclick={edit} />
-        {:else}
+        {:else if auth.staff}
           <Badge tone="slate" label={t('task.readOnly')} dot={false} />
         {/if}
       </div>
       <h1>{task.title}</h1>
       <dl>
         <dt>{t('task.owner')}</dt>
-        <dd>{displayName(task.owner)}</dd>
+        <dd>{staffName(task.owner_id, task.owner)}</dd>
+        {#if auth.staff}
+        <dt>{t('task.organization')}</dt>
+        <dd>{task.organization?.name ?? t('new.orgNone')}</dd>
+        <dt>{t('task.customer')}</dt>
+        <dd>
+          <ul class="people">
+            {#if task.customer}
+              <li>
+                {task.customer.email}
+                {#if canManage}
+                  <button
+                    class="x"
+                    aria-label={t('task.removeCustomer', { name: task.customer.email })}
+                    onclick={removeCustomer}><Icon name="x" size={14} /></button
+                  >
+                {/if}
+              </li>
+            {:else}
+              <li class="none">{t('org.noCustomer')}</li>
+            {/if}
+          </ul>
+          {#if task.customer}
+            <label class="add">
+              {t('task.customerOrganization')}
+              <select
+                value={task.customer.organization_id ?? ''}
+                onchange={(event) => setCustomerOrganization(event.currentTarget.value)}
+              >
+                <option value="">{t('organization.none')}</option>
+                {#each organizations as { id, name } (id)}
+                  <option value={id}>{name}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+          {#if canManage}
+            <form class="add" onsubmit={setCustomer}>
+              <input
+                type="email"
+                list="known-customers"
+                placeholder={t('new.customerEmail')}
+                aria-label={t('new.customerEmail')}
+                bind:value={customerEmail}
+              />
+              <datalist id="known-customers">
+                {#each known as { email } (email)}
+                  <option value={email}></option>
+                {/each}
+              </datalist>
+              <Button
+                type="submit"
+                size="sm"
+                icon={task.customer ? 'edit' : 'plus'}
+                label={t(task.customer ? 'common.change' : 'common.add')}
+                disabled={busy || !customerEmail.trim()}
+              />
+            </form>
+            <small>{t('task.customerHint')}</small>
+          {/if}
+        </dd>
         <dt>{t('task.collaborators')}</dt>
         <dd>
           <ul class="people">
@@ -259,6 +403,7 @@
             </form>
           {/if}
         </dd>
+        {/if}
         {#if task.due_date}
           <dt>{t('task.dueDate')}</dt>
           <dd>{formatDate(task.due_date, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
@@ -267,7 +412,7 @@
       <p class="description">{task.description}</p>
 
       <h2>{t('timeline.title')}</h2>
-      <Timeline entries={shown} cards onedit={startEdit} ondelete={remove} />
+      <Timeline entries={shown} cards viewer={auth.staff ? 'staff' : 'customer'} onedit={startEdit} ondelete={remove} />
       {#if editing}
         <div class="meta">
           <span>{t('timeline.editing')}</span>
@@ -277,8 +422,9 @@
       <Composer
         bind:value={text}
         attach={false}
+        placeholder={auth.staff ? undefined : t('composer.reply')}
         sendLabel={editing ? t('common.save') : undefined}
-        disabled={!canWrite}
+        disabled={!canComment}
         disabledReason={t(closed ? 'composer.closed' : 'composer.locked')}
         onsend={send}
       />
@@ -390,14 +536,24 @@
     background: var(--c-surface-2);
     color: var(--c-red-fg);
   }
-  form.add {
+  .add {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--s-2);
     margin-top: var(--s-2);
   }
-  .add select {
+  small {
+    color: var(--c-text-3);
+  }
+  .choice {
+    display: grid;
+    gap: 6px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+  }
+  select,
+  .add input {
     height: 32px;
     max-width: 100%;
     padding: 0 var(--s-2);
