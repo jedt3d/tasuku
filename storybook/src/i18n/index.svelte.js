@@ -30,8 +30,16 @@ export function t(key, vars) {
 export const formatDate = (value, options = { day: 'numeric', month: 'short' }) =>
   new Intl.DateTimeFormat(tags[i18n.locale], { timeZone: 'UTC', ...options }).format(new Date(value));
 
+// A date is the same day for everyone; a moment is shown in the reader's own time zone.
 export const formatDateTime = (value) =>
-  formatDate(value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  formatDate(value, {
+    timeZone: undefined,
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
 export const relative = (amount, unit) =>
   new Intl.RelativeTimeFormat(tags[i18n.locale], { numeric: 'auto' }).format(amount, unit);

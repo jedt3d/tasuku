@@ -1,20 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { admin, anonymous, signInAs, uniqueEmail } from './helpers.mjs';
-
-const staffMember = () => signInAs(uniqueEmail('staff'), { staff: {} });
-const userId = async (client) => (await client.auth.getUser()).data.user.id;
-
-// Opens a Task as `client` and returns it as that person reads it back.
-async function open(client, fields = {}) {
-  const { data, error } = await client
-    .from('tasks')
-    .insert({ title: 'Replace the UPS battery', description: 'Rack 2, server room.', ...fields })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
+import { admin, anonymous, comment, openTask as open, signInAs, staffMember, uniqueEmail, userId } from './helpers.mjs';
 
 test('a Staff member opens a Task: they are its Owner and it starts as Open', async () => {
   const me = await staffMember();
@@ -145,7 +131,7 @@ test('Tasks are listed by status, and a Staff member lists the ones they own', a
   const mine = await open(me);
   const started = await open(me);
   const theirs = await open(await staffMember());
-  await admin.from('tasks').update({ status: 'in_progress' }).eq('id', started.id);
+  await comment(me, started);
   const ids = [mine.id, started.id, theirs.id];
 
   const open_ = await me.from('tasks').select('id').eq('status', 'open').in('id', ids).order('id');

@@ -2,38 +2,84 @@
   import { page } from '$app/state';
   import Badge from '@ui/lib/Badge.svelte';
   import Button from '@ui/lib/Button.svelte';
+  import Composer from '@ui/lib/Composer.svelte';
   import Field from '@ui/lib/Field.svelte';
+  import Timeline from '@ui/lib/Timeline.svelte';
   import { formatDate, t } from '@ui/i18n/index.svelte.js';
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
   const columns = 'id, title, description, due_date, status, owner_id, owner:staff(name, email)';
 
+  const entryColumns =
+    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, author:staff!author_id(name, email)';
+  // The database counts the same 15 minutes and has the last word (ADR 0002).
+  const EDIT_WINDOW = 15 * 60 * 1000;
+
   let task = $state(null);
+  let entries = $state([]); // the Timeline, oldest first
+  let text = $state(''); // the comment being written
+  let editing = $state(null); // the id of the comment being edited, or null when writing a new one
+  let now = $state(Date.now()); // when the Timeline was last read: decides which comments offer "Edit"
   let missing = $state(false);
   let draft = $state(null); // the details being edited, or null when the Task is only shown
   let problem = $state(''); // a message key, or '' when there is nothing to report
   let busy = $state(false);
 
-  // The button is a convenience: the database refuses everyone else (ADR 0002).
-  const canEdit = $derived(
-    (task?.owner_id === auth.userId || Boolean(auth.staff?.is_task_master)) &&
-      !['done', 'cancelled'].includes(task?.status),
-  );
+  // The buttons are a convenience: the database refuses everyone else (ADR 0002).
+  const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
+  const closed = $derived(['done', 'cancelled'].includes(task?.status));
+  const canWrite = $derived((task?.owner_id === auth.userId || isTaskMaster) && !closed);
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
+  // The entries as the Timeline component draws them.
+  const shown = $derived(
+    entries.map((entry) => {
+      const actor = entry.author ? displayName(entry.author) : 'Tasuku';
+      if (entry.kind === 'opened') return { kind: 'event', icon: 'plus', actor, key: 'event.opened', at: entry.created_at };
+      if (entry.kind === 'moved') return { kind: 'event', actor, key: 'event.movedTo', status: entry.status, at: entry.created_at };
+      // The marker stands where the comment stood, so it carries the comment's time.
+      if (entry.deleted_at) return { kind: 'deleted', at: entry.created_at };
+      return {
+        kind: 'comment',
+        id: entry.id,
+        author: actor,
+        role: entry.author_id === task?.owner_id ? 'owner' : undefined,
+        at: entry.created_at,
+        text: entry.body,
+        edited: Boolean(entry.edited_at),
+        canEdit: canWrite && entry.author_id === auth.userId && now - Date.parse(entry.created_at) < EDIT_WINDOW,
+        canDelete: isTaskMaster,
+      };
+    }),
+  );
+
+  // Nothing in `load` or `refresh` may read, before its first `await`, a state it writes: the effect
+  // below would run it again.
   async function load(id) {
     task = null;
     draft = null;
-    // Nothing here may read a state this function writes: the effect below would run it again.
+    entries = [];
+    text = '';
+    editing = null;
     const numbered = /^\d+$/.test(id);
     missing = !numbered;
-    if (!numbered) return;
-    const { data, error } = await supabase.from('tasks').select(columns).eq('id', id).maybeSingle();
+    if (numbered) await refresh(id);
+  }
+
+  // Reads the Task with its Timeline: a comment can move the Task to In progress.
+  async function refresh(id) {
+    const [found, timeline] = await Promise.all([
+      supabase.from('tasks').select(columns).eq('id', id).maybeSingle(),
+      supabase.from('timeline_entries').select(entryColumns).eq('task_id', id).order('created_at').order('id'),
+    ]);
     if (id !== page.params.id) return; // the reader has moved on to another Task
+    const error = found.error ?? timeline.error;
     problem = error ? 'common.error' : '';
-    missing = !error && !data;
-    task = data;
+    missing = !error && !found.data;
+    task = found.data;
+    entries = timeline.data ?? [];
+    now = Date.now();
   }
 
   const edit = () =>
@@ -57,6 +103,43 @@
     if (error) return;
     task = data;
     draft = null;
+  }
+
+  function startEdit(entry) {
+    editing = entry.id;
+    text = entry.text;
+  }
+
+  function stopEdit() {
+    editing = null;
+    text = '';
+  }
+
+  // Posts the comment being written, or saves the one being edited. The text goes as written.
+  async function send(body) {
+    if (busy || !/\S/.test(body)) return;
+    busy = true;
+    const comments = supabase.from('timeline_entries');
+    const { data, error } = editing
+      ? await comments.update({ body }).eq('id', editing).select('id')
+      : await comments.insert({ task_id: task.id, body }).select('id');
+    busy = false;
+    if (error) return (problem = 'common.error');
+    // An edit the database no longer allows changes no row and reports no error. The text stays in
+    // the box, so nothing the person wrote is lost.
+    const refused = !data.length;
+    editing = null;
+    if (!refused) text = '';
+    await refresh(page.params.id);
+    if (refused) problem = 'timeline.editClosed';
+  }
+
+  async function remove(entry) {
+    if (!confirm(t('timeline.confirmDelete'))) return;
+    const { error } = await supabase.rpc('delete_comment', { entry_id: entry.id });
+    if (error) return (problem = 'common.error');
+    if (editing === entry.id) stopEdit();
+    await refresh(page.params.id);
   }
 
   $effect(() => {
@@ -87,7 +170,7 @@
       <div class="meta">
         <Badge status={task.status} />
         <span>{t('task.number', { id: `#${task.id}` })}</span>
-        {#if canEdit}
+        {#if canWrite}
           <Button size="sm" icon="edit" label={t('task.edit')} onclick={edit} />
         {:else}
           <Badge tone="slate" label={t('task.readOnly')} dot={false} />
@@ -103,6 +186,23 @@
         {/if}
       </dl>
       <p class="description">{task.description}</p>
+
+      <h2>{t('timeline.title')}</h2>
+      <Timeline entries={shown} cards onedit={startEdit} ondelete={remove} />
+      {#if editing}
+        <div class="meta">
+          <span>{t('timeline.editing')}</span>
+          <Button size="sm" label={t('common.cancel')} onclick={stopEdit} />
+        </div>
+      {/if}
+      <Composer
+        bind:value={text}
+        attach={false}
+        sendLabel={editing ? t('common.save') : undefined}
+        disabled={!canWrite}
+        disabledReason={t(closed ? 'composer.closed' : 'composer.locked')}
+        onsend={send}
+      />
     {/if}
   </section>
 </main>
@@ -131,6 +231,11 @@
     font-weight: 700;
     letter-spacing: -0.01em;
     overflow-wrap: anywhere;
+  }
+  h2 {
+    margin: var(--s-4) 0 0;
+    font-size: var(--fs-lg);
+    font-weight: 600;
   }
   a,
   p,

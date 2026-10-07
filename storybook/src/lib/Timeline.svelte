@@ -8,15 +8,25 @@
   // Events carry a message key, not text, so they read in the viewer's language.
   // A Thread hangs off the entry it was started from. Customers never receive Threads.
   // actions: the viewer may write on this Task, so entries offer "Start Thread".
-  let { entries = [], viewer = 'staff', cards = false, actions = false, onthread } = $props();
+  // A comment the viewer may edit or delete says so itself (canEdit, canDelete): the rule is not the
+  // same for every comment.
+  let { entries = [], viewer = 'staff', cards = false, actions = false, onthread, onedit, ondelete } = $props();
 
   const staffView = $derived(viewer !== 'customer');
 </script>
 
 {#snippet tools(entry)}
-  {#if staffView && actions}
+  {#if entry.canEdit || entry.canDelete || (staffView && actions)}
     <span class="tools">
-      <button class="tool" onclick={() => onthread?.(entry)}><Icon name="thread" size={14} />{t('timeline.startThread')}</button>
+      {#if entry.canEdit}
+        <button class="tool" onclick={() => onedit?.(entry)}><Icon name="edit" size={14} />{t('timeline.edit')}</button>
+      {/if}
+      {#if entry.canDelete}
+        <button class="tool" onclick={() => ondelete?.(entry)}><Icon name="trash" size={14} />{t('timeline.delete')}</button>
+      {/if}
+      {#if staffView && actions}
+        <button class="tool" onclick={() => onthread?.(entry)}><Icon name="thread" size={14} />{t('timeline.startThread')}</button>
+      {/if}
     </span>
   {/if}
 {/snippet}
@@ -177,7 +187,9 @@
     margin-top: 2px;
     color: var(--c-text-2);
     max-width: 68ch;
-    white-space: pre-line;
+    /* Shown exactly as written: line breaks and runs of spaces are kept. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
   .cards .bubble {
     margin-top: 6px;
@@ -233,6 +245,8 @@
 
   /* Actions on an entry: shown on hover or focus, and always where there is no hover. */
   .tools {
+    display: inline-flex;
+    gap: 6px;
     margin-left: auto;
     opacity: 0;
     transition: opacity 0.12s;

@@ -13,6 +13,10 @@ export const StaffCanWrite = {
   name: 'Staff on the Task (hover an entry to start a Thread)',
   args: { actions: true },
 };
+export const EditAndDelete = {
+  name: 'A comment its author may still edit, and a Task Master may delete',
+  args: { entries: task.timeline.map((entry) => ({ ...entry, canEdit: entry.kind === 'comment', canDelete: entry.kind === 'comment' })) },
+};
 export const StaffReadOnly = { name: 'Staff, read-only' };
 export const CustomerView = { name: 'Customer (no Threads)', args: { viewer: 'customer' } };
 export const Cards = { name: 'Comments as cards', args: { cards: true, viewer: 'customer' } };
