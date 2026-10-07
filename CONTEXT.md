@@ -52,8 +52,12 @@ A Task or Request that was abandoned without the work being done.
 ### People
 
 **Staff**:
-A person employed by PSP or one of its subsidiaries (e.g. PSPA). Staff can read every Task, including its Threads, but can only write on Tasks they own or collaborate on.
+A person employed by PSP or one of its subsidiaries (e.g. PSPA) whose email a Task Master has registered. Staff can read every Task, including its Threads, and the list of Staff, but can only write on Tasks they own or collaborate on.
 _Avoid_: Member, employee, agent, user
+
+**Removed**:
+A Staff member whose access a Task Master has taken away. They can read and change nothing from that moment, but their record is kept so that Tasks still name them; a Task Master can add them again.
+_Avoid_: Deleted, deactivated, disabled
 
 **Customer**:
 A person outside PSP, identified by a verified email address, who can only reach their own Requests and the Tasks they have been added to.
@@ -68,7 +72,7 @@ The one Staff member responsible for a Task; the only Staff member who may propo
 _Avoid_: Assignee, primary, lead
 
 **Collaborator**:
-A Staff member added to a Task to comment and attach files; cannot propose closing it.
+A Staff member added to a Task to work on its content: comment, attach files and edit its details. A Collaborator cannot change the Owner, propose closing the Task or cancel it, and does not decide who is on it (Collaborators, Customer) or delete attachments; those stay with the Owner and a Task Master.
 _Avoid_: Supporter, collab staff, helper
 
 **Organization**:

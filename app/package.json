@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "stack:up": "supabase start && node scripts/seed.mjs",
     "stack:reset": "supabase db reset && node scripts/seed.mjs",
-    "test": "node --test \"tests/*.test.mjs\"",
+    "test": "node --test --test-concurrency=1 \"tests/*.test.mjs\"",
     "check-i18n": "node ../storybook/scripts/check-i18n.js"
   },
   "dependencies": {

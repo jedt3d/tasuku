@@ -34,6 +34,9 @@ To sign in locally, enter `task.master@example.test` and open the magic link in 
 
 - `src/routes/`: the pages. The top bar with the language switcher is in the layout, so it is on every page.
 - `src/lib/`: the Supabase client and the signed-in state.
+- `src/routes/staff/`: the Staff list. A Task Master adds, removes, promotes and demotes there.
+- `../supabase/functions/invite-staff/`: the invite function, the only place an account is created
+  (`docs/adr/0003`). `supabase start` serves it; restart the stack after adding a function.
 - `scripts/seed.mjs`: the installation step that registers the first Task Master. Sign-up is closed
   (`docs/adr/0003`), so the app never creates an account.
 - `tests/`: see below.
@@ -51,7 +54,11 @@ assert on policy text or table layout, and the interface has no browser tests (s
 const me = await signInAs(uniqueEmail('staff'), { staff: {} });      // a Staff member
 const taskMaster = await signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
 const stranger = await signInAs(uniqueEmail('stranger'));            // signed in, not registered
+const again = await signIn(email);                                   // an account that exists already
 ```
+
+Test files run one at a time (`--test-concurrency=1`): the test of the last remaining Task Master
+stands the other Task Masters down while it runs, and puts them back.
 
 The secret key is read from `supabase status` at run time and is only used to arrange users. It is
 never written to a file.

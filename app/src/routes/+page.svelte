@@ -37,6 +37,7 @@
         <p class="error" role="alert">{t('common.error')}</p>
       {:else}
         <p>{auth.staff ? t('home.empty') : t('home.noAccess')}</p>
+        {#if auth.staff}<a href="/staff">{t('nav.staff')}</a>{/if}
       {/if}
       <Button label={t('signin.signOut')} block onclick={signOut} />
     </section>

@@ -20,7 +20,9 @@ The plan and the issue originally said Cloudflare Pages. The deployed target is 
 - [ ] First Task Master seeded and signed in with a magic link on the deployed app
 - [ ] Mailgun SMTP configured (before real use)
 - [x] Decided: new sign-ups are closed (ADR 0003)
-- [ ] Supabase: "Allow new users to sign up" turned off, once the invite function from #3 is deployed
+- [ ] Supabase: invite function deployed (section 6)
+- [ ] Supabase: "Allow new users to sign up" turned off, once the invite function is deployed
+- [ ] Supabase: sessions time-boxed to 7 days (section 7; needs the Pro plan)
 
 ## 1. Cloudflare Worker and domain
 
@@ -100,8 +102,24 @@ Applied from the repo's migrations once #2 and #3 provide them, with the Supabas
 
    It creates the account and registers it as Staff with the Task Master flag; running it again changes nothing. Then sign in with a magic link on the deployed app. While the built-in sender is in use the address must be a member of the Supabase organization (section 3).
 
+## 6. The invite function (open)
+
+`supabase/functions/invite-staff` is the only place an account is created (ADR 0003). A Task Master calls it from the Staff page. Deploy it after the migrations, from the repository root:
+
+```bash
+supabase functions deploy invite-staff
+```
+
+It reads `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from the function's environment. The local stack supplies all three. On the cloud project, check that they are present under Edge Functions → Secrets before relying on it; this has not been tried yet. It sends no email: the Task Master tells the new Staff member, who then asks for a magic link on the sign-in page.
+
+## 7. Session length (open)
+
+Everyone signs in again 7 days after their last magic link: Staff, Task Masters and Customers alike. Supabase Auth has one setting per project, not one per kind of user, so the 30 days for Staff in spec #1 was dropped (decided in #3).
+
+Locally this is `[auth.sessions] timebox = "168h"` in `supabase/config.toml`. On the cloud project it is the time-box setting under Authentication → Sessions, and it **needs the Pro plan**. On the Free plan a session never expires. No test covers this: the test seam cannot wait 7 days.
+
 ## Sign-up is closed
 
 Decided in [ADR 0003](adr/0003-sign-up-is-closed.md): "Allow new users to sign up" is turned off, and accounts are created only by the invite function (a Supabase Edge Function) when a Task Master registers a Staff member or a Staff member adds a Customer to a Task. The function holds the secret key; the browser never does.
 
-Order matters: deploy the invite function with #3 first, then turn the setting off. Turned off earlier, nobody new could be added. The first Task Master is created by the seed step, not through the app.
+Order matters: deploy the invite function (section 6) first, then turn the setting off. Turned off earlier, nobody new could be added. The first Task Master is created by the seed step, not through the app.

@@ -33,7 +33,7 @@ test('the seeded Task Master signs in with the magic link from Mailpit', async (
     refresh_token: session.get('refresh_token'),
   });
 
-  const { data } = await client.from('staff').select('email, is_task_master');
+  const { data } = await client.from('staff').select('email, is_task_master').eq('email', email);
   assert.deepEqual(data, [{ email, is_task_master: true }]);
 });
 
