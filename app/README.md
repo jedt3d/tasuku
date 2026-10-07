@@ -66,5 +66,5 @@ const again = await signIn(email);                                   // an accou
 Test files run one at a time (`--test-concurrency=1`): the test of the last remaining Task Master
 stands the other Task Masters down while it runs, and puts them back.
 
-The secret key is read from `supabase status` at run time and is only used to arrange users. It is
+The secret key is read from `supabase status` at run time and is only used to arrange: users, and a Task's status until the status functions exist. It is
 never written to a file.

@@ -39,7 +39,7 @@
 
   let asked = 0;
   async function refresh() {
-    const mine = ++asked;
+    const request = ++asked;
     // ponytail: one page. The API returns at most 1000 rows (supabase/config.toml), newest first;
     // page the list when Tasuku holds more Tasks than that.
     let query = supabase
@@ -49,7 +49,7 @@
     if (status !== 'all') query = query.eq('status', status);
     if (view === 'mine') query = query.eq('owner_id', auth.userId);
     const { data, error } = await query;
-    if (mine !== asked) return; // a later choice of filter has already asked again
+    if (request !== asked) return; // a later choice of filter has already asked again
     problem = error ? 'common.error' : '';
     tasks = data ?? [];
   }
@@ -121,6 +121,7 @@
       bind:value={draft.description}
     />
     <Field label={t('task.dueDate')} type="date" action={t('common.optional')} bind:value={draft.due_date} />
+    {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
   </div>
   {#snippet footer()}
     <Button label={t('common.cancel')} onclick={() => (panel = false)} />

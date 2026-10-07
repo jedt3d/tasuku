@@ -2,7 +2,7 @@
 
 -- A Staff member is shown by name on a Task; until they set one, the app shows their email.
 alter table public.staff
-  add column name text not null default '' check (char_length(name) <= 80);
+  add column name text not null default '' check (name = btrim(name) and char_length(name) <= 80);
 grant update (name) on public.staff to authenticated;
 alter policy "staff set own language" on public.staff rename to "staff change own record";
 
@@ -38,12 +38,14 @@ create policy "staff open tasks" on public.tasks
   for insert to authenticated
   with check ((select private.is_staff()) and owner_id = (select auth.uid()));
 
--- Collaborators join this rule when they exist (#6).
+-- Collaborators join this rule when they exist (#6). Done and Cancelled are final: a closed Task is
+-- a record nobody changes.
 create policy "owner and task master change details" on public.tasks
   for update to authenticated
   using (
     (select private.is_staff())
     and (owner_id = (select auth.uid()) or (select private.is_task_master()))
+    and status not in ('done', 'cancelled')
   )
   with check (
     (select private.is_staff())

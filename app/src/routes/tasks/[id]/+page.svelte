@@ -16,7 +16,10 @@
   let busy = $state(false);
 
   // The button is a convenience: the database refuses everyone else (ADR 0002).
-  const canEdit = $derived(task?.owner_id === auth.userId || Boolean(auth.staff?.is_task_master));
+  const canEdit = $derived(
+    (task?.owner_id === auth.userId || Boolean(auth.staff?.is_task_master)) &&
+      !['done', 'cancelled'].includes(task?.status),
+  );
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
   async function load(id) {
@@ -27,6 +30,7 @@
     missing = !numbered;
     if (!numbered) return;
     const { data, error } = await supabase.from('tasks').select(columns).eq('id', id).maybeSingle();
+    if (id !== page.params.id) return; // the reader has moved on to another Task
     problem = error ? 'common.error' : '';
     missing = !error && !data;
     task = data;

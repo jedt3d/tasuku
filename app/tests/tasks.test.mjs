@@ -126,12 +126,25 @@ test('nobody writes the status, the Owner or deletes a Task through the API', as
   assert.deepEqual(data, { status: 'open', owner_id: await userId(owner) });
 });
 
+test('a Task that is Done or Cancelled can no longer be changed', async () => {
+  const owner = await staffMember();
+  const taskMaster = await signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
+
+  for (const status of ['done', 'cancelled']) {
+    const task = await open(owner);
+    await admin.from('tasks').update({ status }).eq('id', task.id);
+    for (const client of [owner, taskMaster]) {
+      const { data } = await client.from('tasks').update({ title: 'Rewritten' }).eq('id', task.id).select();
+      assert.deepEqual(data, []);
+    }
+  }
+});
+
 test('Tasks are listed by status, and a Staff member lists the ones they own', async () => {
   const me = await staffMember();
   const mine = await open(me);
   const started = await open(me);
   const theirs = await open(await staffMember());
-  // No status function exists yet (#5, #8): the secret key stands in for one.
   await admin.from('tasks').update({ status: 'in_progress' }).eq('id', started.id);
   const ids = [mine.id, started.id, theirs.id];
 
@@ -148,10 +161,12 @@ test('a user who is not Staff cannot read or open any Task', async () => {
 
   const read = await stranger.from('tasks').select('*');
   const opened = await stranger.from('tasks').insert({ title: 'Let me in', description: 'Please.' });
+  const changed = await stranger.from('tasks').update({ title: 'Mine now' }).gt('id', 0).select();
 
   assert.equal(read.error, null);
   assert.deepEqual(read.data, []);
   assert.equal(opened.error?.code, '42501');
+  assert.deepEqual(changed.data, []);
 });
 
 test('a removed Staff member reads no Task and cannot change the one they own', async () => {
@@ -183,6 +198,9 @@ test('a Staff member sets their own name, and nobody else’s', async () => {
   const mine = await me.from('staff').update({ name: 'Nicha W.' }).eq('email', email).select('name');
   const theirs = await me.from('staff').update({ name: 'Not you' }).eq('email', otherEmail).select();
 
+  const blank = await me.from('staff').update({ name: '   ' }).eq('email', email);
+
   assert.deepEqual(mine.data, [{ name: 'Nicha W.' }]);
   assert.deepEqual(theirs.data, []);
+  assert.equal(blank.error?.code, '23514');
 });
