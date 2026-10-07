@@ -114,6 +114,6 @@ sequenceDiagram
 
 ## Gaps to confirm
 
-- No policy or function exists in the repository yet, so function names are not shown.
+- The policies on STAFF (#2, #3) and TASK (#4) exist in `supabase/migrations/`: Staff read every Task, anyone else gets no rows, and the status column is granted to nobody, so the first two blocks are built for Staff. The Customer branch and the Timeline wait for #5 and #7. No status function exists yet (#5, #8), so its name is not shown.
 - Attachment files are protected by storage rules and signed URLs (spec #1), not by this path; a separate diagram would cover them.
 - ADR 0002 requires the policies to be tested as a Customer, a non-member Staff, a Collaborator, an Owner and a Task Master; 11 shows what each of them may do.
