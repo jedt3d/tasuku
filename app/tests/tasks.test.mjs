@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { admin, anonymous, comment, openTask as open, signInAs, staffMember, uniqueEmail, userId } from './helpers.mjs';
+import { admin, anonymous, close, comment, openTask as open, signInAs, staffMember, uniqueEmail, userId } from './helpers.mjs';
 
 test('a Staff member opens a Task: they are its Owner and it starts as Open', async () => {
   const me = await staffMember();
@@ -118,7 +118,7 @@ test('a Task that is Done or Cancelled can no longer be changed', async () => {
 
   for (const status of ['done', 'cancelled']) {
     const task = await open(owner);
-    await admin.from('tasks').update({ status }).eq('id', task.id);
+    await close(owner, task, status);
     for (const client of [owner, taskMaster]) {
       const { data } = await client.from('tasks').update({ title: 'Rewritten' }).eq('id', task.id).select();
       assert.deepEqual(data, []);

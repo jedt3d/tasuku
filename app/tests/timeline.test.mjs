@@ -3,7 +3,9 @@ import { test } from 'node:test';
 import {
   admin,
   anonymous,
+  close,
   comment,
+  move,
   openTask,
   signInAs,
   staffMember,
@@ -106,13 +108,17 @@ test('two first comments at the same moment record one move to In progress', asy
 test('a comment on a Resolved Task leaves it Resolved', async () => {
   const owner = await staffMember();
   const task = await openTask(owner);
-  await admin.from('tasks').update({ status: 'resolved' }).eq('id', task.id);
+  await comment(owner, task);
+  await move(owner, task, 'resolve');
 
   const posted = await comment(owner, task, 'One more detail.');
 
   assert.equal(posted.error, null);
   assert.equal(await statusOf(owner, task), 'resolved');
-  assert.deepEqual((await timeline(owner, task)).map((entry) => entry.kind), ['opened', 'comment']);
+  assert.deepEqual(
+    (await timeline(owner, task)).map((entry) => entry.kind),
+    ['opened', 'comment', 'moved', 'moved', 'comment'],
+  );
 });
 
 test('a Task Master comments on any Task', async () => {
@@ -226,7 +232,7 @@ test('a Task that is Done or Cancelled takes no comment and no edit', async () =
   for (const status of ['done', 'cancelled']) {
     const task = await openTask(owner);
     const { data: entry } = await comment(owner, task);
-    await admin.from('tasks').update({ status }).eq('id', task.id);
+    await close(owner, task, status);
 
     for (const client of [owner, master]) {
       assert.equal((await comment(client, task, 'One more thing')).error?.code, '42501');
