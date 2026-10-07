@@ -92,3 +92,25 @@ export async function close(client, task, status) {
   const { error } = await move(client, task, status === 'done' ? 'complete' : 'cancel');
   if (error) throw error;
 }
+
+export const pdf = Buffer.from('%PDF-1.4\n%%EOF\n');
+
+// Uploads a file into the folder of `task` as `client`, straight through the Storage API.
+// Resolves to Storage's answer, error included, with the `path` it tried.
+export async function upload(client, task, body = pdf, contentType = 'application/pdf') {
+  const path = `${task.id}/${randomUUID()}`;
+  const { error } = await client.storage.from('attachments').upload(path, body, { contentType });
+  return { path, error };
+}
+
+// Writes a comment on `task` as `client` with one uploaded file per name in `names`.
+// Resolves to the API's answer, error included.
+export async function attach(client, task, { body = '', names = ['report.pdf'] } = {}) {
+  const files = [];
+  for (const name of names) {
+    const { path, error } = await upload(client, task);
+    if (error) throw error;
+    files.push({ path, name });
+  }
+  return client.rpc('comment_with_files', { task: task.id, body, files });
+}

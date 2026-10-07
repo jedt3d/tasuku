@@ -10,7 +10,19 @@
   // actions: the viewer may write on this Task, so entries offer "Start Thread".
   // A comment the viewer may edit or delete says so itself (canEdit, canDelete): the rule is not the
   // same for every comment.
-  let { entries = [], viewer = 'staff', cards = false, actions = false, onthread, onedit, ondelete } = $props();
+  // A file the viewer may open is a button (onopen); one they may delete says so itself (canDelete).
+  // A deleted file stays as a marker: { deleted: true }.
+  let {
+    entries = [],
+    viewer = 'staff',
+    cards = false,
+    actions = false,
+    onthread,
+    onedit,
+    ondelete,
+    onopen,
+    ondeletefile,
+  } = $props();
 
   const staffView = $derived(viewer !== 'customer');
 </script>
@@ -54,17 +66,30 @@
             {@render tools(entry)}
           </div>
           <div class="bubble">
-            <p>{entry.text}</p>
-            {#if entry.files}
+            {#if entry.text}<p>{entry.text}</p>{/if}
+            {#if entry.files?.length}
               <div class="files">
-                {#each entry.files as file (file.name)}
-                  <span class="file">
-                    <span class="thumb {file.kind}"
-                      ><Icon name={file.kind === 'pdf' ? 'file' : 'image'} size={16} /></span
-                    >
-                    <span class="fname">{file.name}</span>
-                    <span class="muted">{file.size}</span>
-                  </span>
+                {#each entry.files as file (file.id ?? file.name)}
+                  {#if file.deleted}
+                    <span class="file muted"><Icon name="trash" size={14} /> {t('timeline.fileDeleted')}</span>
+                  {:else}
+                    <span class="file">
+                      <button class="open" disabled={!onopen} onclick={() => onopen?.(file)}>
+                        <span class="thumb {file.kind}"
+                          ><Icon name={file.kind === 'pdf' ? 'file' : 'image'} size={16} /></span
+                        >
+                        <span class="fname">{file.name}</span>
+                        <span class="muted">{file.size}</span>
+                      </button>
+                      {#if file.canDelete}
+                        <button
+                          class="tool"
+                          aria-label={t('timeline.deleteFile', { name: file.name })}
+                          onclick={() => ondeletefile?.(file)}><Icon name="trash" size={14} /></button
+                        >
+                      {/if}
+                    </span>
+                  {/if}
                 {/each}
               </div>
             {/if}
@@ -213,6 +238,22 @@
     border-radius: var(--r-md);
     background: var(--c-surface);
     font-size: var(--fs-sm);
+  }
+  .open {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .open:enabled {
+    cursor: pointer;
+  }
+  .open:enabled:hover .fname {
+    text-decoration: underline;
   }
   .thumb {
     display: grid;

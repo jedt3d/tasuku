@@ -7,6 +7,7 @@
   import Icon from '@ui/lib/Icon.svelte';
   import Timeline from '@ui/lib/Timeline.svelte';
   import { formatDate, t } from '@ui/i18n/index.svelte.js';
+  import { formatSize, prepare } from '#lib/attachments.js';
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
 
@@ -16,7 +17,7 @@
     'id, title, description, due_date, status, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
 
   const entryColumns =
-    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email)';
+    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email), attachments(id, path, name, mime_type, size, deleted_at)';
   // The database counts the same 15 minutes and has the last word (ADR 0002).
   const EDIT_WINDOW = 15 * 60 * 1000;
 
@@ -30,11 +31,13 @@
   let customerEmail = $state(''); // the email being typed in "Customer"
   let names = $state({}); // for a Customer: the name of each Staff member on the Task, by user id
   let text = $state(''); // the comment being written
+  let files = $state([]); // the files chosen to go with it
   let editing = $state(null); // the id of the comment being edited, or null when writing a new one
   let now = $state(Date.now()); // when the Timeline was last read: decides which comments offer "Edit"
   let missing = $state(false);
   let draft = $state(null); // the details being edited, or null when the Task is only shown
   let problem = $state(''); // a message key, or '' when there is nothing to report
+  let problemFile = $state(''); // the name of the file the message is about
   let busy = $state(false);
 
   // The buttons are a convenience: the database refuses everyone else (ADR 0002).
@@ -95,6 +98,7 @@
         const key = entry.kind === 'customer_added' ? 'event.addedCustomer' : 'event.removedCustomer';
         return { kind: 'event', icon: 'users', actor, key, vars: { name: customerName(entry.customer) }, at: entry.created_at };
       }
+      if (entry.kind === 'attachment_deleted') return { kind: 'event', icon: 'trash', actor, key: 'event.deletedAttachment', at: entry.created_at };
       // The marker stands where the comment stood, so it carries the comment's time.
       if (entry.deleted_at) return { kind: 'deleted', at: entry.created_at };
       return {
@@ -113,6 +117,16 @@
         edited: Boolean(entry.edited_at),
         canEdit: canComment && (entry.author_id ?? entry.customer_id) === auth.userId && now - Date.parse(entry.created_at) < EDIT_WINDOW,
         canDelete: isTaskMaster,
+        files: entry.attachments.map((file) => ({
+          id: file.id,
+          path: file.path,
+          name: file.name,
+          kind: file.mime_type === 'application/pdf' ? 'pdf' : 'image',
+          size: formatSize(file.size),
+          deleted: Boolean(file.deleted_at),
+          // On a Done or Cancelled Task only a Task Master deletes a file, as with a comment.
+          canDelete: canManage || isTaskMaster,
+        })),
       };
     });
   });
@@ -127,6 +141,7 @@
     adding = '';
     customerEmail = '';
     text = '';
+    files = [];
     editing = null;
     const numbered = /^\d+$/.test(id);
     missing = !numbered;
@@ -202,21 +217,65 @@
     text = '';
   }
 
+  // Uploads the chosen files into the Task's folder. Resolves to what `comment_with_files` takes,
+  // or to null with the problem set. A file left behind by a failure is read by nobody.
+  async function uploadFiles() {
+    // Every file is checked before the first one goes up, so a refusal leaves nothing behind.
+    const ready = [];
+    for (const file of files) {
+      const prepared = await prepare(file);
+      if (prepared.problem) {
+        problem = prepared.problem;
+        problemFile = file.name;
+        return null;
+      }
+      ready.push(prepared);
+    }
+    const sent = [];
+    for (const { blob, name } of ready) {
+      const path = `${task.id}/${crypto.randomUUID()}`;
+      // Not kept by the browser: a link that has run out, or a file since erased, must not open again.
+      const { error } = await supabase.storage
+        .from('attachments')
+        .upload(path, blob, { contentType: blob.type, cacheControl: '0' });
+      if (error) {
+        problem = 'common.error';
+        problemFile = name;
+        return null;
+      }
+      sent.push({ path, name });
+    }
+    return sent;
+  }
+
   // Posts the comment being written, or saves the one being edited. The text goes as written.
+  // Files go with a new comment only, and a new comment may be files without text.
   async function send(body) {
-    if (busy || !/\S/.test(body)) return;
+    const attached = !editing && files.length > 0;
+    if (busy || (!/\S/.test(body) && !attached)) return;
     busy = true;
     const comments = supabase.from('timeline_entries');
-    const { data, error } = editing
-      ? await comments.update({ body }).eq('id', editing).select('id')
-      : await comments.insert({ task_id: task.id, body }).select('id');
+    let answer;
+    if (attached) {
+      const sent = await uploadFiles();
+      answer = sent && (await supabase.rpc('comment_with_files', { task: task.id, body, files: sent }));
+      if (answer && !answer.error) answer.data = [answer.data];
+    } else if (editing) {
+      answer = await comments.update({ body }).eq('id', editing).select('id');
+    } else {
+      answer = await comments.insert({ task_id: task.id, body }).select('id');
+    }
     busy = false;
-    if (error) return (problem = 'common.error');
+    if (!answer) return; // a file was refused: the message says which
+    if (answer.error) return (problem = 'common.error');
     // An edit the database no longer allows changes no row and reports no error. The text stays in
     // the box, so nothing the person wrote is lost.
-    const refused = !data.length;
+    const refused = !answer.data.length;
     editing = null;
-    if (!refused) text = '';
+    if (!refused) {
+      text = '';
+      files = [];
+    }
     await refresh(page.params.id);
     if (refused) problem = 'timeline.editClosed';
   }
@@ -290,12 +349,44 @@
     if (error) problem = 'common.error';
   }
 
+  // The database cuts the reading and names the objects; Storage is the only way to erase them.
+  // If the erasing fails the files are already out of everyone's reach.
+  async function erase(paths) {
+    if (!paths.length) return;
+    const { error } = await supabase.storage.from('attachments').remove(paths);
+    if (error) problem = 'common.error';
+  }
+
   async function remove(entry) {
     if (!confirm(t('timeline.confirmDelete'))) return;
-    const { error } = await supabase.rpc('delete_comment', { entry_id: entry.id });
+    const { data, error } = await supabase.rpc('delete_comment', { entry_id: entry.id });
     if (error) return (problem = 'common.error');
     if (editing === entry.id) stopEdit();
     await refresh(page.params.id);
+    await erase(data);
+  }
+
+  async function removeFile(file) {
+    if (!confirm(t('timeline.confirmDeleteFile', { name: file.name }))) return;
+    const { data, error } = await supabase.rpc('delete_attachment', { attachment_id: file.id });
+    if (error) return (problem = 'common.error');
+    await refresh(page.params.id);
+    await erase([data]);
+  }
+
+  // The link lives for a minute and is issued only to someone who may read the Task. The tab is
+  // opened before the link is asked for: a browser blocks a tab opened after waiting.
+  async function openFile(file) {
+    const tab = window.open('', '_blank');
+    const { data, error } = await supabase.storage.from('attachments').createSignedUrl(file.path, 60);
+    if (error) {
+      tab?.close();
+      return (problem = 'common.error');
+    }
+    if (tab) {
+      tab.opener = null;
+      tab.location = data.signedUrl;
+    }
   }
 
   $effect(() => {
@@ -306,7 +397,7 @@
 <main>
   <section class="card">
     <a href="/">← {t(auth.staff ? 'nav.overview' : 'customer.myTasks')}</a>
-    {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
+    {#if problem}<p class="error" role="alert">{t(problem, { name: problemFile })}</p>{/if}
 
     {#if !auth.staff && !auth.customer}
       <p>{t('home.noAccess')}</p>
@@ -469,7 +560,7 @@
       {/if}
 
       <h2>{t('timeline.title')}</h2>
-      <Timeline entries={shown} cards viewer={auth.staff ? 'staff' : 'customer'} onedit={startEdit} ondelete={remove} />
+      <Timeline entries={shown} cards viewer={auth.staff ? 'staff' : 'customer'} onedit={startEdit} ondelete={remove} onopen={openFile} ondeletefile={removeFile} />
       {#if editing}
         <div class="meta">
           <span>{t('timeline.editing')}</span>
@@ -478,7 +569,8 @@
       {/if}
       <Composer
         bind:value={text}
-        attach={false}
+        bind:files
+        attach={!editing}
         placeholder={auth.staff ? undefined : t('composer.reply')}
         sendLabel={editing ? t('common.save') : undefined}
         disabled={!canComment}

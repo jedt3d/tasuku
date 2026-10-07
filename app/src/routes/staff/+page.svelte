@@ -13,6 +13,7 @@
   let name = $state(auth.staff?.name ?? '');
   let problem = $state(''); // a message key, or '' when there is nothing to report
   let busy = $state(false);
+  let unerased = $state([]); // for a Task Master: deleted files whose object is still in Storage
 
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
 
@@ -23,7 +24,15 @@
       .order('email');
     if (error) problem = 'common.error';
     else people = data;
+    if (isTaskMaster) unerased = (await supabase.rpc('unerased_attachments')).data ?? [];
   }
+
+  // Finishes what a deletion left undone. Nobody could read these files; now they are gone.
+  const erase = () =>
+    change(async () => {
+      const { error } = await supabase.storage.from('attachments').remove(unerased.map((file) => file.path));
+      return error ? 'common.error' : '';
+    });
 
   // Runs one change, reports what went wrong, and shows the list as the database now has it.
   async function change(action, mine = false) {
@@ -107,6 +116,17 @@
         </form>
       {/if}
       {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
+      {#if unerased.length}
+        <div class="report" role="status">
+          <p>
+            {t('attach.unerased', { n: unerased.length })}
+            {#each [...new Set(unerased.map((file) => file.task_id))] as id (id)}
+              <a href="/tasks/{id}">#{id}</a>{' '}
+            {/each}
+          </p>
+          <Button size="sm" icon="trash" label={t('attach.eraseNow')} disabled={busy} onclick={erase} />
+        </div>
+      {/if}
 
       <ul>
         {#each people as person (person.user_id)}
@@ -141,6 +161,19 @@
 </main>
 
 <style>
+  .report {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--r-md);
+    font-size: var(--fs-sm);
+  }
+  .report p {
+    flex: 1;
+    margin: 0;
+  }
   main {
     flex: 1;
     display: grid;

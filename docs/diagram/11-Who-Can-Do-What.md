@@ -107,7 +107,7 @@ flowchart TD
 - As built in #7, any Staff member sets a Customer's Organization, and a Customer sees the names of the Staff on their Task but never an email (both decided by the user, 7 Oct 2026). Neither is drawn.
 - As built in #7, a Customer's comment leaves an Open Task Open, and a Customer edits their own comment for 15 minutes. Marking Done, Reopen and Cancel in the Customer box are built (#8); attachments are not (#9).
 - A Task Master who is also the Owner is drawn as Task Master, who can do everything an Owner can.
-- The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54).
+- The Customer can add attachments through the Timeline (stories 47-48); only an Owner or Task Master can delete one (story 54). As built in #9: whoever may comment on a Task attaches files to it; on a Done or Cancelled Task only a Task Master deletes one, as with a comment (decided by the user in #9).
 - Whether a Collaborator may remove themselves is not covered by the spec. As built in #6 they cannot: only the Owner and a Task Master remove a Collaborator (confirmed by the user, 7 Oct 2026).
 - As built in #6, nobody adds or removes a Collaborator once the Task is Done or Cancelled, and a person removed from Staff cannot be added until a Task Master adds them back to Staff (both confirmed by the user, 7 Oct 2026). The spec does not say this outright.
 - The Collaborator box follows CONTEXT.md as changed in #3. Spec #1 (story 30) still describes a Collaborator as commenting and attaching only.
