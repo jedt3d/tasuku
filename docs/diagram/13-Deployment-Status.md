@@ -1,10 +1,10 @@
-# 07-System-Boundary
+# 13-Deployment-Status
 
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
+Source: docs/deploy.md status checklist and sections 4-5. Colour key: green = done, blue = open step, yellow = before real use, orange = decision still to make. Arrows mean must finish before.
 
 ```mermaid
 ---
-title: 07-System-Boundary
+title: 13-Deployment-Status
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -78,29 +78,20 @@ config:
   flowchart:
     curve: basis
 ---
-flowchart TB
-  subgraph outside["Outside PSP"]
-    direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
-  end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
-    direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
-  end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
-    direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
-  end
-  subgraph dev["Development of Tasuku"]
-    direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
-  end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
+flowchart LR
+  cf["Cloudflare Worker<br/>and Custom Domain"]:::green
+  auth["Supabase Auth<br/>URLs set"]:::green
+  schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
+  app["Build the app and<br/>deploy to the Worker"]:::blue
+  seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
+  mailgun["Mailgun SMTP"]:::yellow
+  signup{"Disable new<br/>sign-ups?"}:::orange
+  cf --> app
+  auth --> seed
+  schema --> seed
+  app --> seed
+  seed -.->|"before real use"| mailgun
+  seed --> signup
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -114,6 +105,6 @@ flowchart TB
 
 ## Gaps to confirm
 
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+- deploy.md says the sign-up decision is made 'with #3 and #7'; the arrow from the seed step is the only ordering it gives (once the first Task Master exists).
+- The first Task Master must be a Supabase organization member while the built-in email sender is in use (deploy.md section 3), so the seed step is also gated on that.
+- This diagram mirrors the checklist; when a box in deploy.md is ticked, its colour here changes to green.

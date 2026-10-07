@@ -428,7 +428,7 @@ flowchart TB
     tm["Task Master"]:::grey
     cust["Customer"]:::grey
   end
-  subgraph edge["Cloudflare Pages"]
+  subgraph edge["Cloudflare Worker"]
     direction LR
     spa["SvelteKit static app<br/>th / en / ja"]:::blue
   end

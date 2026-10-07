@@ -1,10 +1,10 @@
-# 07-System-Boundary
+# 10-Authorization-Request-Path
 
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
+Source: ADR 0002, spec #1 section Task model (status changes). Colour key: blue = the app, violet = Supabase API and database function, green = Postgres with RLS, light red = refused. Hiding something in the UI is never a security measure.
 
 ```mermaid
 ---
-title: 07-System-Boundary
+title: 10-Authorization-Request-Path
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -78,42 +78,42 @@ config:
   flowchart:
     curve: basis
 ---
-flowchart TB
-  subgraph outside["Outside PSP"]
-    direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
+sequenceDiagram
+  participant App as Tasuku app
+  participant API as Supabase API
+  participant DB as Postgres with RLS
+  participant Fn as Status function
+  Note over App,DB: There is no server of our own in between (ADR 0002)
+  rect rgb(220, 225, 248)
+    App->>API: read the Timeline of a Task
+    API->>DB: query as the signed-in user
+    alt Customer on the Task
+      DB-->>App: comments and events, never a Thread
+    else Staff
+      DB-->>App: the whole Task
+    else Anyone else
+      DB-->>App: no rows
+    end
   end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
-    direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
+  rect rgb(244, 218, 219)
+    App->>API: update the status column directly
+    API->>DB: write as the signed-in user
+    DB-->>App: refused, the column cannot be written
   end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
-    direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
+  rect rgb(211, 233, 227)
+    App->>API: ask for a status change
+    API->>Fn: call the database function
+    Fn->>DB: check role and current status
+    alt Allowed
+      DB-->>App: status changed, Timeline event added
+    else Not allowed
+      DB-->>App: error, nothing changes
+    end
   end
-  subgraph dev["Development of Tasuku"]
-    direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
-  end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
-
-  classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
-  classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
-  classDef violet  fill:#ecdcf2,stroke:#ae3ec9,stroke-width:2px,color:#1d1d1d
-  classDef orange  fill:#f8e2d4,stroke:#e16919,stroke-width:2px,color:#1d1d1d
-  classDef yellow  fill:#fef4d6,stroke:#f1ac4b,stroke-width:2px,color:#1d1d1d
-  classDef green   fill:#d3e9e3,stroke:#099268,stroke-width:2px,color:#1d1d1d
-  classDef lred    fill:#f4dadb,stroke:#f87777,stroke-width:2px,color:#1d1d1d
-  classDef grey    fill:#eceef0,stroke:#9fa8b2,stroke-width:2px,color:#1d1d1d
 ```
 
 ## Gaps to confirm
 
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+- No policy or function exists in the repository yet, so function names are not shown.
+- Attachment files are protected by storage rules and signed URLs (spec #1), not by this path; a separate diagram would cover them.
+- ADR 0002 requires the policies to be tested as a Customer, a non-member Staff, a Collaborator, an Owner and a Task Master; 11 shows what each of them may do.

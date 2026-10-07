@@ -1,10 +1,10 @@
-# 07-System-Boundary
+# 09-Sign-In-And-Session
 
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
+Source: Spec #1 (GitHub issue) stories 1-8 and 25, SignInScreen in the Storybook. Colour key: blue = people and the app, violet = Supabase Auth, notes = rules. The alt block shows that what a person sees is decided after sign-in.
 
 ```mermaid
 ---
-title: 07-System-Boundary
+title: 09-Sign-In-And-Session
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -78,42 +78,40 @@ config:
   flowchart:
     curve: basis
 ---
-flowchart TB
-  subgraph outside["Outside PSP"]
-    direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
+sequenceDiagram
+  participant Staff as Staff member
+  participant P as Person signing in
+  participant App as Tasuku app
+  participant Auth as Supabase Auth
+  participant DB as Postgres with RLS
+  participant Mail as Email sender
+  opt First time a Customer is added to a Task
+    Staff->>App: add Customer email to a Task
+    App->>DB: create the Customer if the email is new
+    DB->>Mail: added to a Task, link to the Task
+    Mail-->>P: email with the Task link
   end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
-    direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
+  P->>App: enter email on the sign-in page
+  App->>Auth: request a magic link
+  Auth->>Mail: send the magic link
+  Mail-->>P: email with the magic link
+  P->>Auth: click the link
+  Auth-->>App: session
+  Note over Auth,App: Staff session 30 days, Customer session 7 days
+  App->>DB: what may this email see
+  alt Email is registered as Staff
+    DB-->>App: every Task, write only on own Tasks
+  else Email is a Customer on a Task
+    DB-->>App: only their Tasks, Timeline only
+  else Neither
+    DB-->>App: nothing
   end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
-    direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
-  end
-  subgraph dev["Development of Tasuku"]
-    direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
-  end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
-
-  classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
-  classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
-  classDef violet  fill:#ecdcf2,stroke:#ae3ec9,stroke-width:2px,color:#1d1d1d
-  classDef orange  fill:#f8e2d4,stroke:#e16919,stroke-width:2px,color:#1d1d1d
-  classDef yellow  fill:#fef4d6,stroke:#f1ac4b,stroke-width:2px,color:#1d1d1d
-  classDef green   fill:#d3e9e3,stroke:#099268,stroke-width:2px,color:#1d1d1d
-  classDef lred    fill:#f4dadb,stroke:#f87777,stroke-width:2px,color:#1d1d1d
-  classDef grey    fill:#eceef0,stroke:#9fa8b2,stroke-width:2px,color:#1d1d1d
+  Note over P,App: Session expired: ask for a new magic link
 ```
 
 ## Gaps to confirm
 
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+- How the session length differs between Staff and Customer is not described (spec #1 gives only the two durations).
+- What a person with no access sees (an empty page or a message) is not decided.
+- Magic link lifetime and rate limits are not described.
+- Installation seeding of the first Task Master (story 7) and the Task Master registering Staff emails (story 9) are separate flows, not drawn.

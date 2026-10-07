@@ -1,10 +1,30 @@
-# 07-System-Boundary
-
-Source: CONTEXT.md. Colour key: green = people inside PSP, grey = outside PSP or outside the product (nodes and frames), blue = work records kept in Tasuku.
-
-```mermaid
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>13-Deployment-Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#f9fafb; --ink:#1d1d1d; --muted:#6b7280; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font-family:"Shantell Sans", "Comic Sans MS", cursive; }
+  main { max-width:1200px; margin:0 auto; padding:24px 16px 40px; }
+  h1 { font-size:1.6rem; font-weight:600; margin:0 0 4px; }
+  p.legend { color:var(--muted); margin:0 0 20px; }
+  .diagram { overflow-x:auto; }
+  .diagram svg { max-width:100%; height:auto; }
+  .err { color:#e03131; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <p class="legend">green = done, blue = open step, yellow = before real use, orange = decision still to make. Arrows mean must finish before.</p>
+  <div class="diagram" id="out"></div>
+  <script type="text/plain" id="src">
 ---
-title: 07-System-Boundary
+title: 13-Deployment-Status
 config:
   look: handDrawn
   handDrawnSeed: 3
@@ -78,29 +98,20 @@ config:
   flowchart:
     curve: basis
 ---
-flowchart TB
-  subgraph outside["Outside PSP"]
-    direction LR
-    customer(["Customer<br/>(identified by email)"]):::grey
-  end
-  subgraph inside["PSP and its subsidiaries (e.g. PSPA)"]
-    direction LR
-    staff(["Staff"]):::green
-    master(["Task Master"]):::green
-    owner(["Owner of a Task"]):::green
-  end
-  subgraph tasuku["Tasuku (Cloudflare frontend, Supabase cloud, ADR 0001)"]
-    direction LR
-    requests["Requests"]:::blue
-    tasks["Tasks"]:::blue
-  end
-  subgraph dev["Development of Tasuku"]
-    direction LR
-    issues[["Issues in the<br/>GitHub issue tracker"]]:::grey
-  end
-  outside -->|"reports Requests, reaches added Tasks"| tasuku
-  inside -->|"read every Task, work on Tasks"| tasuku
-  dev -.->|"dev work on Tasuku itself"| tasuku
+flowchart LR
+  cf["Cloudflare Worker<br/>and Custom Domain"]:::green
+  auth["Supabase Auth<br/>URLs set"]:::green
+  schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
+  app["Build the app and<br/>deploy to the Worker"]:::blue
+  seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
+  mailgun["Mailgun SMTP"]:::yellow
+  signup{"Disable new<br/>sign-ups?"}:::orange
+  cf --> app
+  auth --> seed
+  schema --> seed
+  app --> seed
+  seed -.->|"before real use"| mailgun
+  seed --> signup
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -110,10 +121,24 @@ flowchart TB
   classDef green   fill:#d3e9e3,stroke:#099268,stroke-width:2px,color:#1d1d1d
   classDef lred    fill:#f4dadb,stroke:#f87777,stroke-width:2px,color:#1d1d1d
   classDef grey    fill:#eceef0,stroke:#9fa8b2,stroke-width:2px,color:#1d1d1d
-```
-
-## Gaps to confirm
-
-- Components inside Tasuku (web app, database, email, login) are not described in CONTEXT.md; they come with the architecture diagram.
-- How Staff of subsidiaries other than PSPA are identified.
-- Whether anything links GitHub Issues to the product beyond being development work on it.
+</script>
+</main>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+const out = document.getElementById("out");
+try {
+  await document.fonts.load('16px "Shantell Sans"');
+  await document.fonts.load('600 16px "Shantell Sans"');
+} catch (e) {}
+mermaid.initialize({ startOnLoad: false, suppressErrorRendering: true });
+try {
+  const code = document.getElementById("src").textContent.trim();
+  const { svg } = await mermaid.render("sketchdi-svg", code);
+  out.innerHTML = svg;
+} catch (e) {
+  out.innerHTML = '<p class="err"></p>';
+  out.firstChild.textContent = "Diagram error: " + (e && e.message ? e.message : e);
+}
+</script>
+</body>
+</html>
