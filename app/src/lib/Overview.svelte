@@ -1,5 +1,5 @@
 <script>
-  // The Staff landing page: every Task, by status, and the ones the reader owns. The layout follows
+  // The Staff landing page: every Task, by status, and the ones the reader is part of. The layout follows
   // the Overview prototype in the design system; its Organization and Activity views, and search,
   // have nothing to show until Organizations (#7) and the Timeline (#5) exist.
   import Badge from '@ui/lib/Badge.svelte';
@@ -42,12 +42,11 @@
     const request = ++asked;
     // ponytail: one page. The API returns at most 1000 rows (supabase/config.toml), newest first;
     // page the list when Tasuku holds more Tasks than that.
-    let query = supabase
-      .from('tasks')
-      .select('id, title, status, due_date, owner:staff(name, email)')
+    // "My Tasks" are the ones the reader owns or collaborates on.
+    let query = (view === 'mine' ? supabase.rpc('my_tasks') : supabase.from('tasks'))
+      .select('id, title, status, due_date, owner:staff!owner_id(name, email)')
       .order('id', { ascending: false });
     if (status !== 'all') query = query.eq('status', status);
-    if (view === 'mine') query = query.eq('owner_id', auth.userId);
     const { data, error } = await query;
     if (request !== asked) return; // a later choice of filter has already asked again
     problem = error ? 'common.error' : '';

@@ -181,4 +181,9 @@ export default {
   'timeline.confirmDelete': 'このコメントを削除しますか？本文は全員に対して消去され、元に戻せません。',
   'timeline.editing': '自分のコメントを編集中',
   'timeline.editClosed': 'このコメントはもう編集できません。コメントを編集できるのは投稿後 15 分間です。',
+  'event.addedCollaborator': 'が {name} をコラボレーターに追加しました',
+  'event.removedCollaborator': 'が {name} をコラボレーターから外しました',
+  'task.noCollaborators': 'まだいません',
+  'task.chooseStaff': 'スタッフを選択',
+  'task.removeCollaborator': '{name} をコラボレーターから外す',
 };

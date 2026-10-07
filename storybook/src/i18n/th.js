@@ -181,4 +181,9 @@ export default {
   'timeline.confirmDelete': 'ลบ comment นี้หรือไม่ ข้อความจะถูกลบสำหรับทุกคนและกู้คืนไม่ได้',
   'timeline.editing': 'กำลังแก้ไข comment ของคุณ',
   'timeline.editClosed': 'แก้ไข comment นี้ไม่ได้แล้ว comment แก้ไขได้ภายใน 15 นาทีหลังส่ง',
+  'event.addedCollaborator': 'เพิ่ม {name} เป็น Collaborator',
+  'event.removedCollaborator': 'นำ {name} ออกจาก Collaborator',
+  'task.noCollaborators': 'ยังไม่มี',
+  'task.chooseStaff': 'เลือก Staff',
+  'task.removeCollaborator': 'นำ {name} ออกจาก Collaborator',
 };

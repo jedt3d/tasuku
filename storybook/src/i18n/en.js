@@ -179,4 +179,9 @@ export default {
   'timeline.confirmDelete': 'Delete this comment? Its text is erased for everyone and cannot be restored.',
   'timeline.editing': 'Editing your comment',
   'timeline.editClosed': 'This comment can no longer be edited. A comment can be edited for 15 minutes after it is posted.',
+  'event.addedCollaborator': 'added {name} as a Collaborator',
+  'event.removedCollaborator': 'removed {name} from the Collaborators',
+  'task.noCollaborators': 'Nobody yet',
+  'task.chooseStaff': 'Choose a Staff member',
+  'task.removeCollaborator': 'Remove {name} from the Collaborators',
 };

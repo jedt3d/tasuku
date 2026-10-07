@@ -59,3 +59,8 @@ export async function openTask(client, fields = {}) {
 // Posts a comment on the Timeline of `task` as `client`. Resolves to the API's answer, error included.
 export const comment = (client, task, body = 'On it.') =>
   client.from('timeline_entries').insert({ task_id: task.id, body }).select().single();
+
+// Adds the Staff member signed in as `staff` to `task` as a Collaborator, acting as `client`.
+// Resolves to the API's answer, error included.
+export const addCollaborator = async (client, task, staff) =>
+  client.from('task_collaborators').insert({ task_id: task.id, staff_id: await userId(staff) }).select();
