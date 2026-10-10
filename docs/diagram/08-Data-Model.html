@@ -149,6 +149,7 @@ erDiagram
     uuid customer_id FK
     string body
     string status
+    bigint next_task_id FK
     datetime created_at
     datetime edited_at
     datetime deleted_at
@@ -184,6 +185,7 @@ erDiagram
   TASK ||--o{ COLLABORATOR : has
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
+  TIMELINE_ENTRY }o--o| TASK : "continued in"
   STAFF |o--o{ TIMELINE_ENTRY : writes
   STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
   CUSTOMER |o--o{ TIMELINE_ENTRY : "writes or is the subject of"

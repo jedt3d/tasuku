@@ -241,7 +241,7 @@ flowchart TB
 
 ## Task lifecycle
 
-Grey = not started, blue = being worked, yellow = awaiting confirmation, green = finished, red = abandoned. A Task with no Customer is closed by its Owner; a Task Master may confirm any Resolved Task. Built by Issues #5, #8 and #11.
+Grey = not started, blue = being worked, yellow = awaiting confirmation, green = finished, red = abandoned, violet = carried on in a new Task (#39, not in spec #1). A Task with no Customer is closed by its Owner; a Task Master may confirm any Resolved Task. Built by Issues #5, #8, #11 and #39.
 
 ```mermaid
 ---
@@ -328,19 +328,24 @@ stateDiagram-v2
   InProgress --> Done: Customer closes directly
   Open --> Cancelled: Customer, Owner or Task Master
   InProgress --> Cancelled: Customer, Owner or Task Master
+  Open --> Transferred: Owner or Task Master
+  InProgress --> Transferred: Owner or Task Master
   Done --> [*]
   Cancelled --> [*]
+  Transferred --> [*]
   state "In progress" as InProgress
   class Open grey
   class InProgress blue
   class Resolved yellow
   class Done green
   class Cancelled red
+  class Transferred violet
   classDef grey fill:#eceef0,stroke:#9fa8b2,stroke-width:2px,color:#1d1d1d
   classDef blue fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef yellow fill:#fef4d6,stroke:#f1ac4b,stroke-width:2px,color:#1d1d1d
   classDef green fill:#d3e9e3,stroke:#099268,stroke-width:2px,color:#1d1d1d
   classDef red fill:#f4dadb,stroke:#e03131,stroke-width:2px,color:#1d1d1d
+  classDef violet fill:#ecdcf2,stroke:#ae3ec9,stroke-width:2px,color:#1d1d1d
 ```
 
 ## Architecture

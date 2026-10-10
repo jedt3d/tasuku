@@ -20,7 +20,7 @@
 </head>
 <body>
 <main>
-  <p class="legend">grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned.</p>
+  <p class="legend">grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned, violet = carried on in a new Task.</p>
   <div class="diagram" id="out"></div>
   <script type="text/plain" id="src">
 ---
@@ -110,15 +110,19 @@ stateDiagram-v2
   InProgress --> Done : Customer
   Open --> Cancelled : Customer, Owner or Task Master
   InProgress --> Cancelled : Customer, Owner or Task Master
+  Open --> Transferred : Owner or Task Master
+  InProgress --> Transferred : Owner or Task Master
   Done --> [*]
   Cancelled --> [*]
-  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. While Resolved the Customer is not replaced or taken off
+  Transferred --> [*]
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. The Customer is never replaced or taken off. Transferring opens a new Task that carries the work on, without a Customer. A Resolved Task takes no Customer and is Reopened before it is transferred
   note right of Open : A Customer comment leaves the Task Open
   class Open grey
   class InProgress blue
   class Resolved yellow
   class Done green
   class Cancelled lred
+  class Transferred violet
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d

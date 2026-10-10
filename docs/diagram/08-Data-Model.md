@@ -129,6 +129,7 @@ erDiagram
     uuid customer_id FK
     string body
     string status
+    bigint next_task_id FK
     datetime created_at
     datetime edited_at
     datetime deleted_at
@@ -164,6 +165,7 @@ erDiagram
   TASK ||--o{ COLLABORATOR : has
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
+  TIMELINE_ENTRY }o--o| TASK : "continued in"
   STAFF |o--o{ TIMELINE_ENTRY : writes
   STAFF |o--o{ TIMELINE_ENTRY : "is the subject of"
   CUSTOMER |o--o{ TIMELINE_ENTRY : "writes or is the subject of"
@@ -187,3 +189,4 @@ erDiagram
 - ATTACHMENT (#9) is built (table `attachments`). A file is part of a comment: `entry_id` is that comment, and `has_files` on the entry lets a comment have files and no text. `path` names the object in the private Storage bucket `attachments` (`<task>/<uuid>`); the bytes are not in the database. `mime_type` and `size` are what Storage recorded. A deleted file is the same row with `name` emptied and `deleted_at`, `deleted_by` set, and an `attachment_deleted` entry on the Timeline; deleting a comment deletes its files without that entry. The object itself is erased through Storage afterwards.
 - A Task's details change only while it is not Done or Cancelled (#4, from story 70). Spec #1 does not say this about details outright.
 - The Owner of a Task is never also its COLLABORATOR. Reassigning the Owner (#12, `reassign_task`, a Task Master only) keeps it true: the previous Owner gets a COLLABORATOR row, also when removed from Staff, and the new Owner's row is deleted. Neither writes a Collaborator entry on the Timeline; the one entry is `owner_changed`. A trigger on COLLABORATOR reads the Owner again once it holds the Task, so adding someone at the moment the Task is given to them is refused.
+- Transfer (#39) is built. TASK.status has a sixth value, `transferred`, final like `done` and `cancelled`; where the items above say "not Done or Cancelled" the rule is now "unfinished" (`private.is_unfinished`). TIMELINE_ENTRY has `next_task_id`: set only on the `moved` entry that makes a Task Transferred, where it names the Task that carries it on (the Customer of the old Task reads the number and nothing else of that Task). An `opened` entry may now have `subject_id`: the Owner, when a Task Master opened the Task for them by transferring an earlier one. The new Task refers to the old one through `earlier_task_id`, which stays a detail writers change until #41. Attachments stay with the old Task. EMAIL_OUTBOX has one more kind, `transferred`, to the Owner whose Task a Task Master transferred, on the `opened` entry of the new Task. `customer_removed` is no longer written (`remove_customer` is gone, `set_customer` only fills an empty place) and stays a kind for entries written before.
