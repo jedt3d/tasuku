@@ -329,7 +329,7 @@ stateDiagram-v2
   InProgress --> Resolved: Owner proposes closure
   Resolved --> InProgress: Reopen by Customer
   Resolved --> Done: Customer confirms
-  Resolved --> Done: auto after 48 h
+  Resolved --> Done: by itself after 48 h
   Open --> Done: Customer closes directly
   InProgress --> Done: Customer closes directly
   Open --> Cancelled: Customer, Owner or Task Master
@@ -440,7 +440,7 @@ flowchart TB
     rls{"Row Level<br/>Security"}:::orange
     db[("Postgres")]:::green
     store[("Private bucket<br/>attachments")]:::green
-    cron["Scheduled job<br/>automatic closure"]:::violet
+    cron["Scheduled jobs<br/>automatic closure, email retry"]:::violet
     fn["Edge Function<br/>send-emails"]:::violet
   end
   mail[["Email sender<br/>Mailpit, Supabase, Mailgun"]]:::grey

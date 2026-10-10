@@ -127,7 +127,13 @@ erDiagram
     uuid customer_id FK
     bigint organization_id FK
     bigint earlier_task_id FK
+    datetime closes_at
     datetime created_at
+  }
+  SETTINGS {
+    boolean id PK
+    int closure_hours
+    int reminder_hours
   }
   COLLABORATOR {
     bigint task_id FK

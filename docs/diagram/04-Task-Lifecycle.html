@@ -105,14 +105,14 @@ stateDiagram-v2
   Open --> InProgress : first Staff comment
   InProgress --> Resolved : Owner or Task Master
   Resolved --> InProgress : Reopen, Customer or Task Master
-  Resolved --> Done : Customer, Task Master, or auto after 48 h
+  Resolved --> Done : Customer, Task Master, or by itself after 48 h
   Open --> Done : Customer
   InProgress --> Done : Customer
   Open --> Cancelled : Customer, Owner or Task Master
   InProgress --> Cancelled : Customer, Owner or Task Master
   Done --> [*]
   Cancelled --> [*]
-  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. While Resolved the Customer is not replaced or taken off
   note right of Open : A Customer comment leaves the Task Open
   class Open grey
   class InProgress blue

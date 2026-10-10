@@ -7,7 +7,7 @@
   import Field from '@ui/lib/Field.svelte';
   import Icon from '@ui/lib/Icon.svelte';
   import Timeline from '@ui/lib/Timeline.svelte';
-  import { formatDate, t } from '@ui/i18n/index.svelte.js';
+  import { formatDate, formatDateTime, t } from '@ui/i18n/index.svelte.js';
   import { formatSize, prepare } from '#lib/attachments.js';
   import { auth, displayName } from '#lib/session.svelte.js';
   import { supabase } from '#lib/supabase.js';
@@ -15,7 +15,7 @@
   // Row Level Security leaves out of an answer what the reader may not read (ADR 0002): to a
   // Customer the Owner, the Organization and every Staff member come back as null.
   const columns =
-    'id, title, description, due_date, status, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
+    'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
 
   const entryColumns =
     'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email), attachments(id, path, name, mime_type, size, deleted_at)';
@@ -45,6 +45,8 @@
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
   const closed = $derived(['done', 'cancelled'].includes(task?.status));
   const canManage = $derived((task?.owner_id === auth.userId || isTaskMaster) && !closed);
+  // The Customer of a Resolved Task has been asked and given a time to answer: Reopen it first.
+  const canChooseCustomer = $derived(canManage && task?.status !== 'resolved');
   const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
   const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
   // The Customer comments, and changes nothing else.
@@ -456,7 +458,7 @@
             {#if task.customer}
               <li>
                 {task.customer.email}
-                {#if canManage}
+                {#if canChooseCustomer}
                   <button
                     class="x"
                     aria-label={t('task.removeCustomer', { name: task.customer.email })}
@@ -482,7 +484,7 @@
               </select>
             </label>
           {/if}
-          {#if canManage}
+          {#if canChooseCustomer}
             <form class="add" onsubmit={setCustomer}>
               <input
                 type="email"
@@ -554,6 +556,9 @@
         {/if}
       </dl>
       <p class="description">{task.description}</p>
+      {#if task.status === 'resolved' && task.closes_at}
+        <p role="status">{t('task.closesAt', { when: formatDateTime(task.closes_at) })}</p>
+      {/if}
       {#if moves.length || auth.staff}
         <div class="actions">
           {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newRelated')}</a>{/if}

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { write } from '../../supabase/functions/send-emails/emails/index.js';
 import {
-  addCollaborator, addCustomer, anonymous, attach, comment, customerOf, emailsTo, env, move, openTask, settle,
+  addCollaborator, addCustomer, anonymous, attach, comment, customerOf, emailsTo, env, move, openTask, runClosure,
+  settle,
   staffMember, taskMaster, uniqueEmail, userId,
 } from './helpers.mjs';
 
@@ -10,9 +11,10 @@ const emailOf = async (client) => (await client.auth.getUser()).data.user.email;
 const link = (task) => `http://localhost:5173/tasks/${task.id}`;
 
 // The one email of `kind` about `task` among `mails`, checked for its recipient, its language
-// (the subject is the catalogue's) and its link. `actor` is how whoever did it must be named.
-function emailAbout(mails, kind, task, { to, language = 'en', actor }) {
-  const expected = write(language, kind, { id: task.id, title: task.title, actor, link: link(task) });
+// (the subject is the catalogue's) and its link. `actor` is how whoever did it must be named;
+// `hours` is how long the email says is left before the Task closes by itself.
+function emailAbout(mails, kind, task, { to, language = 'en', actor, hours }) {
+  const expected = write(language, kind, { id: task.id, title: task.title, actor, hours, link: link(task) });
   const found = mails.filter((mail) => mail.Subject === expected.subject && mail.Text.trim() === expected.text);
   assert.equal(found.length, 1, `one "${kind}" email in ${language}`);
   assert.deepEqual(found[0].To.map((recipient) => recipient.Address), [to]);
@@ -91,7 +93,7 @@ test('a comment that is files without text sends the same email, with no file in
   assert.equal(mail.Attachments.length, 0);
 });
 
-test('the Customer gets an email when their Task becomes Resolved; nobody else does', async () => {
+test('the Customer gets an email when their Task becomes Resolved, which says when it closes by itself; nobody else does', async () => {
   const owner = await staffMember();
   const helper = await staffMember();
   const task = await openTask(owner);
@@ -102,7 +104,8 @@ test('the Customer gets an email when their Task becomes Resolved; nobody else d
   assert.equal((await move(owner, task, 'resolve')).error, null);
 
   const to = await emailOf(customer);
-  emailAbout(await emailsTo(to, 3), 'resolved', task, { to, actor: 'PSP' });
+  const mail = emailAbout(await emailsTo(to, 3), 'resolved', task, { to, actor: 'PSP', hours: 48 });
+  assert.ok(mail.Text.includes('48 hours'));
   await settle();
   // The helper: added, and the Owner's comment.
   assert.equal((await emailsTo(await emailOf(helper))).length, 2);
@@ -163,6 +166,75 @@ test('a removed Staff member and a Customer who was replaced get nothing more', 
   await settle();
   assert.equal((await emailsTo(toHelper)).length, 1);
   assert.equal((await emailsTo(toFirst)).length, 1);
+});
+
+// A Task of `owner` that is Resolved, with a Customer who has the three emails so far: added, the
+// Owner's comment, Resolved.
+async function resolvedTask(owner) {
+  const task = await openTask(owner);
+  const customer = await customerOf(owner, task);
+  assert.equal((await comment(owner, task)).error, null);
+  assert.equal((await move(owner, task, 'resolve')).error, null);
+  const to = await emailOf(customer);
+  await emailsTo(to, 3);
+  return { task, customer, to };
+}
+
+test('the Customer gets one reminder before their Resolved Task closes by itself, and not before the lead time', async () => {
+  const owner = await staffMember();
+  const { task, to } = await resolvedTask(owner);
+
+  await runClosure(23);
+  await settle();
+  assert.equal((await emailsTo(to)).length, 3);
+
+  await runClosure(25);
+  // The email says how long is left by the clock, which has not moved.
+  emailAbout(await emailsTo(to, 4), 'reminder', task, { to, hours: 48 });
+  await runClosure(26);
+  await settle();
+  assert.equal((await emailsTo(to)).length, 4);
+  assert.deepEqual(await emailsTo(await emailOf(owner)), []);
+});
+
+test('a Task Reopened and Resolved again gets a reminder of its own', async () => {
+  const owner = await staffMember();
+  const { task, customer, to } = await resolvedTask(owner);
+  await runClosure(25);
+  await emailsTo(to, 4);
+
+  assert.equal((await move(customer, task, 'reopen')).error, null);
+  assert.equal((await move(owner, task, 'resolve')).error, null);
+  await emailsTo(to, 5);
+  await runClosure(25);
+
+  const mails = await emailsTo(to, 6);
+  const { subject } = write('en', 'reminder', { id: task.id, title: task.title });
+  assert.equal(mails.filter((mail) => mail.Subject === subject).length, 2);
+});
+
+test('the Customer gets an email when their Task closed by itself, which names the Owner; the Owner gets none', async () => {
+  const owner = await staffMember();
+  const { task, to } = await resolvedTask(owner);
+
+  await runClosure(49);
+
+  // No reminder for a Task that is already past its time.
+  emailAbout(await emailsTo(to, 4), 'closed', task, { to, actor: 'PSP' });
+  await settle();
+  assert.equal((await emailsTo(to)).length, 4);
+  assert.deepEqual(await emailsTo(await emailOf(owner)), []);
+});
+
+test('a Customer who marks their Task Done themselves gets no email about it closing', async () => {
+  const owner = await staffMember();
+  const { task, customer, to } = await resolvedTask(owner);
+
+  assert.equal((await move(customer, task, 'complete')).error, null);
+  await runClosure(49);
+
+  await settle();
+  assert.equal((await emailsTo(to)).length, 3);
 });
 
 test('the link in an email works for a Customer who is not signed in: the magic link brings them back to the Task', async () => {
