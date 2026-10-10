@@ -120,6 +120,12 @@ erDiagram
     uuid staff_id FK
     datetime added_at
   }
+  TASK_LINK {
+    bigint task_id FK
+    bigint related_task_id FK
+    uuid added_by FK
+    datetime added_at
+  }
   TIMELINE_ENTRY {
     bigint id PK
     bigint task_id FK
@@ -161,7 +167,9 @@ erDiagram
   CUSTOMER |o--o{ TASK : "is added to"
   ORGANIZATION |o--o{ TASK : labels
   ORGANIZATION |o--o{ CUSTOMER : "belongs to"
-  TASK }o--o| TASK : "refers to"
+  TASK }o--o| TASK : "carries on from"
+  TASK ||--o{ TASK_LINK : "is one of the pair"
+  STAFF ||--o{ TASK_LINK : adds
   TASK ||--o{ COLLABORATOR : has
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
@@ -189,4 +197,5 @@ erDiagram
 - ATTACHMENT (#9) is built (table `attachments`). A file is part of a comment: `entry_id` is that comment, and `has_files` on the entry lets a comment have files and no text. `path` names the object in the private Storage bucket `attachments` (`<task>/<uuid>`); the bytes are not in the database. `mime_type` and `size` are what Storage recorded. A deleted file is the same row with `name` emptied and `deleted_at`, `deleted_by` set, and an `attachment_deleted` entry on the Timeline; deleting a comment deletes its files without that entry. The object itself is erased through Storage afterwards.
 - A Task's details change only while it is not Done or Cancelled (#4, from story 70). Spec #1 does not say this about details outright.
 - The Owner of a Task is never also its COLLABORATOR. Reassigning the Owner (#12, `reassign_task`, a Task Master only) keeps it true: the previous Owner gets a COLLABORATOR row, also when removed from Staff, and the new Owner's row is deleted. Neither writes a Collaborator entry on the Timeline; the one entry is `owner_changed`. A trigger on COLLABORATOR reads the Owner again once it holds the Task, so adding someone at the moment the Task is given to them is refused.
-- Transfer (#39) is built. TASK.status has a sixth value, `transferred`, final like `done` and `cancelled`; where the items above say "not Done or Cancelled" the rule is now "unfinished" (`private.is_unfinished`). TIMELINE_ENTRY has `next_task_id`: set only on the `moved` entry that makes a Task Transferred, where it names the Task that carries it on (the Customer of the old Task reads the number and nothing else of that Task). An `opened` entry may now have `subject_id`: the Owner, when a Task Master opened the Task for them by transferring an earlier one. The new Task refers to the old one through `earlier_task_id`, which stays a detail writers change until #41. Attachments stay with the old Task. EMAIL_OUTBOX has one more kind, `transferred`, to the Owner whose Task a Task Master transferred, on the `opened` entry of the new Task. `customer_removed` is no longer written (`remove_customer` is gone, `set_customer` only fills an empty place) and stays a kind for entries written before.
+- Transfer (#39) is built. TASK.status has a sixth value, `transferred`, final like `done` and `cancelled`; where the items above say "not Done or Cancelled" the rule is now "unfinished" (`private.is_unfinished`). TIMELINE_ENTRY has `next_task_id`: set only on the `moved` entry that makes a Task Transferred, where it names the Task that carries it on (the Customer of the old Task reads the number and nothing else of that Task). An `opened` entry may now have `subject_id`: the Owner, when a Task Master opened the Task for them by transferring an earlier one. The new Task carries on from the old one through `earlier_task_id`, which nobody changes or clears on a Task opened by a transfer (#41). Attachments stay with the old Task. EMAIL_OUTBOX has one more kind, `transferred`, to the Owner whose Task a Task Master transferred, on the `opened` entry of the new Task. `customer_removed` is no longer written (`remove_customer` is gone, `set_customer` only fills an empty place) and stays a kind for entries written before.
+- Related Tasks (#41, asked for by the user on 11 Oct 2026, not in spec #1) are built. TASK_LINK (table `task_links`) is one row per pair of Tasks related by content, keyed by `task_id` and `related_task_id` with the lower number always in `task_id`, so a pair is stored once whichever Task is named first and a Task is not linked to itself. Both columns point at TASK; one line is drawn. `added_by` is the Staff member who added the link, written by a trigger and never by the caller; a removed row leaves no trace. A link is no entry of the Timeline and sends no email. `transfer_task` copies the links of the old Task to the new one, under the name of whoever transfers. This is a second kind of link next to `earlier_task_id` (drawn as "carries on from": one, from the new Task to the old one); the Task page shows that one in both directions.
