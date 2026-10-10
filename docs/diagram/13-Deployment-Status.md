@@ -1,6 +1,6 @@
 # 13-Deployment-Status
 
-Source: docs/deploy.md status checklist and sections 4-5. Colour key: green = done, blue = open step, yellow = before real use. Arrows mean must finish before.
+Source: docs/deploy.md status checklist and sections 4-8. Colour key: green = done, blue = open step, yellow = before real use. Arrows mean must finish before.
 
 ```mermaid
 ---
@@ -82,14 +82,15 @@ flowchart LR
   cf["Cloudflare Worker<br/>and Custom Domain"]:::green
   auth["Supabase Auth<br/>URLs set"]:::green
   decided["Decided: sign-up<br/>is closed (ADR 0003)"]:::green
-  schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
-  app["Build the app and<br/>deploy to the Worker"]:::blue
-  seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
-  invite["Deploy the two<br/>invite functions"]:::blue
-  signup["Turn off<br/>new sign-ups"]:::blue
+  schema["Schema and RLS<br/>12 migrations applied"]:::green
+  app["Build the app and<br/>deploy to the Worker"]:::green
+  seed["Seed the first Task Master<br/>sign in with a magic link"]:::green
+  invite["Deploy the two<br/>invite functions"]:::green
+  signup["Turn off<br/>new sign-ups"]:::green
   session["Sessions time-boxed to 7 days<br/>needs the Pro plan"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
-  emails["Deploy send-emails<br/>its secrets and Vault"]:::blue
+  emails["Deploy<br/>send-emails"]:::green
+  secrets["send-emails secrets<br/>and the two Vault secrets"]:::blue
   cf --> app
   auth --> seed
   schema --> seed
@@ -99,8 +100,9 @@ flowchart LR
   invite --> signup
   auth --> session
   seed -.->|"before real use"| mailgun
-  schema --> emails
-  mailgun -.->|"API key"| emails
+  emails --> schema
+  emails --> secrets
+  mailgun -.->|"API key"| secrets
 
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
@@ -115,8 +117,8 @@ flowchart LR
 
 ## Gaps to confirm
 
-- Notification emails (#10) are a box of their own in deploy.md (section 8): the function `send-emails`, its secrets and two Vault secrets. It needs a Mailgun API key, which is not the SMTP password of the Mailgun box.
-- Sign-ups can only be turned off once the invite functions are deployed (`invite-staff` and, since #7, `invite-customer`; deploy.md section 6); before that nobody new could be added.
+- Notification emails (#10, deploy.md section 8): the function `send-emails` is deployed, and goes out before the migrations on every deploy (an email of a kind it does not know fails its whole batch). Its secrets and the two Vault secrets are open, so the outbox only fills. They need a Mailgun API key, which is not the SMTP password of the Mailgun box, and a Mailgun domain with DNS records: the only one today is a sandbox.
+- Sign-ups were turned off after the invite functions were deployed (`invite-staff` and `invite-customer`; deploy.md section 6). `invite-staff` was tried on the cloud project; `invite-customer` was not.
 - The 7-day session setting needs the Supabase Pro plan; on the Free plan a session never expires (deploy.md section 7).
-- The first Task Master must be a Supabase organization member while the built-in email sender is in use (deploy.md section 3), so the seed step is also gated on that.
+- Magic links still come from the built-in email sender (deploy.md section 3): organization members only, 2 emails an hour. Only the first Task Master has signed in.
 - This diagram mirrors the checklist; when a box in deploy.md is ticked, its colour here changes to green.

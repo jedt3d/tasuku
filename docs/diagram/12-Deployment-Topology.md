@@ -1,6 +1,6 @@
 # 12-Deployment-Topology
 
-Source: docs/deploy.md (sections 1-3, status list) and ADR 0001. Colour key: grey = people and machines, blue = Cloudflare, violet = Supabase, yellow = temporary or not in place yet. The dotted lines are open steps or one-off checks.
+Source: docs/deploy.md (sections 1-5 and 8, status list) and ADR 0001. Colour key: grey = people and machines, blue = Cloudflare, violet = Supabase, yellow = temporary or not in place yet. The dotted lines are open steps or one-off checks.
 
 ```mermaid
 ---
@@ -93,8 +93,8 @@ flowchart TB
   subgraph supa["Supabase cloud, ap-southeast-1"]
     direction LR
     auth["Auth<br/>Site URL and redirect allow list"]:::violet
-    db[("Postgres with RLS<br/>schema not applied yet")]:::yellow
-    fn["Edge Function send-emails<br/>not deployed yet"]:::yellow
+    db[("Postgres with RLS<br/>12 migrations, sign-up closed")]:::violet
+    fn["Edge Function send-emails<br/>deployed, no secrets yet"]:::yellow
   end
   subgraph mail["Email"]
     direction LR
@@ -110,7 +110,7 @@ flowchart TB
   db -.->|"outbox, pg_net and pg_cron"| fn
   fn -.->|"HTTP API, open"| mailgun
   dev -->|"npx wrangler deploy"| worker
-  dev -.->|"supabase db push, open"| db
+  dev -->|"supabase db push"| db
   devserver -.->|"redirect allowed"| auth
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
@@ -125,8 +125,8 @@ flowchart TB
 
 ## Gaps to confirm
 
-- Notification emails (#10, deploy.md section 8) never use the built-in sender: the database calls the Edge Function `send-emails`, which sends through Mailgun's HTTP API because Edge Functions cannot open ports 25 and 587. Nothing of it is on the cloud project yet. The two invite functions (deploy.md section 6) are still not drawn.
-- The build exists since #2 (`app/`): it takes the Supabase URL and the publishable key from environment variables and refuses to run without them. It has not been deployed to the Worker yet.
-- The seed of the first Task Master is a script (`app/scripts/seed.mjs`, deploy.md section 5); it has not been run against the cloud project and is not drawn.
+- Notification emails (#10, deploy.md section 8) never use the built-in sender: the database calls the Edge Function `send-emails`, which sends through Mailgun's HTTP API because Edge Functions cannot open ports 25 and 587. The function is deployed but has no secrets, and the Vault has none, so nothing is sent and the outbox only fills. The two invite functions (deploy.md section 6) are deployed and still not drawn.
+- The build exists since #2 (`app/`): it takes the Supabase URL and the publishable key from environment variables and refuses to run without them. It is deployed to the Worker; the config is `app/wrangler.jsonc`.
+- The seed of the first Task Master is a script (`app/scripts/seed.mjs`, deploy.md section 5); it was run once against the cloud project and is not drawn.
 - The local Supabase stack from #2 is not drawn; deploy.md says it does not use the cloud redirect list.
 - Earlier diagrams named Cloudflare Pages; deploy.md line 12 says the deployed target is a Worker with static assets.
