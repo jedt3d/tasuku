@@ -6,9 +6,9 @@ import th from './th.js';
 
 const catalogues = { en, th, ja };
 
-// `kind`: added, comment, resolved, reminder, closed, cancelled, assigned or unassigned. `values`:
-// id, title, actor, link, and where the text names them `hours` (how long before the Task closes
-// by itself) and `owner` (the Owner of the Task).
+// `kind`: added, comment, resolved, reminder, closed, cancelled, assigned, unassigned or
+// transferred. `values`: id, title, actor, link, and where the text names them `hours` (how long
+// before the Task closes by itself) and `owner` (the Owner of the Task).
 export function write(language, kind, values) {
   const fill = (text) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
   const { subject, body } = (catalogues[language] ?? en)[kind];

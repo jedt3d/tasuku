@@ -72,55 +72,48 @@ test('an email used before is offered again, and the same Customer can be on sev
   assert.deepEqual(await tasksOf(await signIn(email)), [first.id, second.id]);
 });
 
-test('adding another Customer replaces the first, who loses access', async () => {
-  const owner = await staffMember();
-  const task = await openTask(owner);
-  const firstEmail = uniqueEmail('first');
-  const first = await customerOf(owner, task, firstEmail);
-  const { data: said } = await comment(first, task, 'Please hurry.');
-
-  const second = await customerOf(owner, task);
-
-  assert.equal(await customerEmail(owner, task), (await second.auth.getUser()).data.user.email);
-  assert.deepEqual(await tasksOf(first), []);
-  assert.deepEqual(await timeline(first, task), []);
-  assert.equal((await comment(first, task)).error?.code, '42501');
-  const reworded = await first.from('timeline_entries').update({ body: 'Never mind.' }).eq('id', said.id).select();
-  assert.deepEqual(reworded.data, []);
-  assert.deepEqual(await tasksOf(second), [task.id]);
-  // The Customer before stays in the list of emails used before.
-  assert.equal((await owner.from('customers').select('email').eq('email', firstEmail)).data.length, 1);
-});
-
-test('the Owner takes the Customer off the Task, who then reads it no more', async () => {
-  const owner = await staffMember();
-  const task = await openTask(owner);
-  const customer = await customerOf(owner, task);
-
-  const removed = await owner.rpc('remove_customer', { task: task.id });
-
-  assert.equal(removed.error, null);
-  assert.equal(await customerEmail(owner, task), null);
-  assert.deepEqual(await tasksOf(customer), []);
-});
-
-test('adding and removing a Customer appear on the Timeline, with who did it and to whom', async () => {
+test('a Task that has a Customer takes no other: the first stays, and no account is made for the second', async () => {
   const owner = await staffMember();
   const master = await taskMaster();
   const task = await openTask(owner);
-  const first = await userId(await customerOf(owner, task));
-  const second = await userId(await customerOf(master, task));
-  await owner.rpc('remove_customer', { task: task.id });
-  await owner.rpc('remove_customer', { task: task.id }); // nobody left to remove: no event
+  const first = await customerOf(owner, task);
+  const wanted = uniqueEmail('second');
+
+  for (const client of [owner, master]) {
+    assert.equal(status(await addCustomer(client, task, wanted)), 403);
+  }
+
+  assert.equal(await customerEmail(owner, task), (await first.auth.getUser()).data.user.email);
+  assert.deepEqual(await tasksOf(first), [task.id]);
+  assert.equal((await comment(first, task, 'Still here.')).error, null);
+  const sent = await anonymous().auth.signInWithOtp({ email: wanted, options: { shouldCreateUser: false } });
+  assert.equal(sent.error?.code, 'otp_disabled');
+});
+
+test('nobody takes a Customer off a Task', async () => {
+  const owner = await staffMember();
+  const master = await taskMaster();
+  const task = await openTask(owner);
+  const customer = await customerOf(owner, task);
+
+  for (const client of [owner, master]) {
+    // The function is gone, and the column is granted to nobody.
+    assert.equal((await client.rpc('remove_customer', { task: task.id })).error?.code, 'PGRST202');
+    assert.equal((await client.from('tasks').update({ customer_id: null }).eq('id', task.id)).error?.code, '42501');
+  }
+
+  assert.deepEqual(await tasksOf(customer), [task.id]);
+});
+
+test('adding a Customer appears on the Timeline, with who did it and to whom', async () => {
+  const owner = await staffMember();
+  const master = await taskMaster();
+  const task = await openTask(owner);
+  const customer = await userId(await customerOf(master, task));
 
   const entries = await timeline(owner, task);
 
-  assert.deepEqual(entries.slice(1), [
-    { kind: 'customer_added', author_id: await userId(owner), customer_id: first },
-    { kind: 'customer_removed', author_id: await userId(master), customer_id: first },
-    { kind: 'customer_added', author_id: await userId(master), customer_id: second },
-    { kind: 'customer_removed', author_id: await userId(owner), customer_id: second },
-  ]);
+  assert.deepEqual(entries.slice(1), [{ kind: 'customer_added', author_id: await userId(master), customer_id: customer }]);
 });
 
 test('adding the Customer a Task already has changes nothing', async () => {
@@ -140,17 +133,16 @@ test('only the Owner and a Task Master choose the Customer, and nobody else make
   const collaborator = await staffMember();
   const task = await openTask(owner);
   await addCollaborator(owner, task, collaborator);
-  const customer = await customerOf(owner, task);
-  const current = await customerEmail(owner, task);
+  // A Customer of another Task: this one has none yet, so only who asks decides the answer.
+  const customer = await customerOf(owner, await openTask(owner));
   const wanted = uniqueEmail('wanted');
 
   for (const client of [collaborator, await staffMember(), customer, await signInAs(uniqueEmail('stranger')), anonymous()]) {
     assert.equal(status(await addCustomer(client, task, wanted)), 403);
-    assert.equal((await client.rpc('set_customer', { task: task.id, customer_email: current })).error?.code, '42501');
-    assert.equal((await client.rpc('remove_customer', { task: task.id })).error?.code, '42501');
+    assert.equal((await client.rpc('set_customer', { task: task.id, customer_email: wanted })).error?.code, '42501');
   }
 
-  assert.equal(await customerEmail(owner, task), current);
+  assert.equal(await customerEmail(owner, task), null);
   const sent = await anonymous().auth.signInWithOtp({ email: wanted, options: { shouldCreateUser: false } });
   assert.equal(sent.error?.code, 'otp_disabled');
 });
@@ -175,7 +167,6 @@ test('nobody changes the Customer of a Task that is Done or Cancelled, who still
 
     for (const client of [owner, master]) {
       assert.equal(status(await addCustomer(client, task, uniqueEmail('late'))), 403);
-      assert.equal((await client.rpc('remove_customer', { task: task.id })).error?.code, '42501');
     }
     assert.deepEqual(await tasksOf(customer), [task.id]);
   }

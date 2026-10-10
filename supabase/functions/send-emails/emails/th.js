@@ -31,4 +31,8 @@ export default {
     subject: 'Task #{id} มี Owner ใหม่: {title}',
     body: '{actor} มอบ Task #{id} "{title}" ให้ {owner} คุณยังอยู่ใน Task นี้ในฐานะ Collaborator\n\nเปิด Task:\n{link}',
   },
+  transferred: {
+    subject: 'Task #{id} ทำต่อจาก Task ของคุณ: {title}',
+    body: '{actor} เปิด Task ใหม่ #{id} "{title}" เพื่อทำงานต่อจาก Task ของคุณ คุณเป็น Owner ของ Task นี้ และยังไม่มี Customer\n\nเปิด Task:\n{link}',
+  },
 };

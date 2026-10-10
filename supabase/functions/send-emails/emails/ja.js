@@ -31,4 +31,8 @@ export default {
     subject: 'タスク #{id} のオーナーが変わりました: {title}',
     body: '{actor} がタスク #{id}「{title}」を {owner} に引き継ぎました。あなたはコラボレーターとして残ります。\n\nタスクを開く:\n{link}',
   },
+  transferred: {
+    subject: 'タスク #{id} があなたのタスクを引き継ぎました: {title}',
+    body: '{actor} があなたのタスクを新しいタスク #{id}「{title}」に引き継ぎました。あなたがオーナーです。カスタマーはまだいません。\n\nタスクを開く:\n{link}',
+  },
 };

@@ -102,6 +102,10 @@ export const move = (client, task, action) => client.rpc(`${action}_task`, { tas
 export const reassign = async (client, task, staff) =>
   client.rpc('reassign_task', { task: task.id, new_owner: await userId(staff) });
 
+// Transfers `task` as `client`: resolves to the API's answer, whose data is the number of the Task
+// that carries it on.
+export const transfer = (client, task) => client.rpc('transfer_task', { task: task.id });
+
 // Runs automatic closure as if it were `hours` from now: the job is not open to anyone signed in,
 // and the status is still changed by the function under test. Every Resolved Task of the local
 // stack that is due by then is closed with it.

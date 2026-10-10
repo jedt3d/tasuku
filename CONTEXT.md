@@ -7,7 +7,7 @@ An internal work-request tracker for PSP and the Customers it supports, built in
 ### Work
 
 **Task**:
-A single piece of work tracked until both sides agree it is finished. It is the unit that write access is granted on, and it involves at most one Customer.
+A single piece of work tracked until both sides agree it is finished. It is the unit that write access is granted on, and it involves at most one Customer, who is never replaced or taken off: the Task is transferred instead.
 _Avoid_: Ticket, case, issue
 
 **Request**:
@@ -35,7 +35,7 @@ A Task that exists but that no Staff member has commented on yet.
 A Task that Staff have started working on.
 
 **Resolved**:
-A Task whose Owner considers the work finished and has proposed closing it; it still awaits confirmation. A Resolved Task nobody answers becomes Done by itself once the closure period (48 hours unless a Task Master changes it) has passed; the Customer is reminded before that. Its Customer is not replaced or taken off until it is Reopened.
+A Task whose Owner considers the work finished and has proposed closing it; it still awaits confirmation. A Resolved Task nobody answers becomes Done by itself once the closure period (48 hours unless a Task Master changes it) has passed; the Customer is reminded before that. It takes no Customer and is not transferred until it is Reopened.
 _Avoid_: Request for review, pending close
 
 **Done**:
@@ -43,7 +43,7 @@ A Task whose closure is final: confirmed after Resolved, closed directly by the 
 _Avoid_: Closed, completed
 
 **Unfinished**:
-Said of a Task that is not Done or Cancelled: Open, In progress or Resolved. Only an unfinished Task is reassigned, and the Staff page counts the unfinished Tasks each Staff member owns.
+Said of a Task that is not Done, Cancelled or Transferred: Open, In progress or Resolved. Only an unfinished Task is reassigned, and the Staff page counts the unfinished Tasks each Staff member owns.
 _Avoid_: Open (it is one status), live, active, pending
 
 **Reopen**:
@@ -52,6 +52,14 @@ _Avoid_: Reject
 
 **Cancelled**:
 A Task or Request that was abandoned without the work being done.
+
+**Transferred**:
+A Task whose work goes on in a new Task, because it must continue with another Customer or with none. It is final, like Done and Cancelled: the Task stays as the record of who read it and what was said there.
+_Avoid_: Moved, replaced, closed, handed over
+
+**Transfer**:
+To open, in one action, a new Task that carries an Open or In progress Task on, and make the old one Transferred. The Owner or a Task Master does it. The new Task has the same details, Owner and Collaborators, no Customer and a Timeline of its own, and refers to the old one.
+_Avoid_: Replace the Customer, clone, hand over (that is a change of Owner)
 
 ### People
 
@@ -72,7 +80,7 @@ A Staff member who administers Tasuku: decides which emails are Staff, runs the 
 _Avoid_: Admin, manager
 
 **Owner**:
-The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. An Owner can hand ownership to another Staff member, who must accept it first; a Task Master can reassign it without acceptance, on any Task that is not Done or Cancelled, to any Staff member except the Customer of that Task. The previous Owner stays on the Task as a Collaborator.
+The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. An Owner can hand ownership to another Staff member, who must accept it first; a Task Master can reassign it without acceptance, on any unfinished Task, to any Staff member except the Customer of that Task. The previous Owner stays on the Task as a Collaborator.
 _Avoid_: Assignee, primary, lead
 
 **Collaborator**:

@@ -125,6 +125,7 @@ export const statusCounts = [
   { id: 'resolved', count: 4 },
   { id: 'done' },
   { id: 'cancelled' },
+  { id: 'transferred' },
 ];
 
 const org = (name, tone, badge, value, latest, ago, meta, internal = false) => ({

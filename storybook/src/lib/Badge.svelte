@@ -2,7 +2,7 @@
   import { t } from '../i18n/index.svelte.js';
 
   // Pass `status` for a Task or Thread status, or `tone` + `label` for anything else.
-  const tones = { open: 'slate', in_progress: 'blue', resolved: 'amber', done: 'green', cancelled: 'red', settled: 'green' };
+  const tones = { open: 'slate', in_progress: 'blue', resolved: 'amber', done: 'green', cancelled: 'red', transferred: 'violet', settled: 'green' };
 
   let { status, tone = 'slate', label = '', dot = true, caps = false } = $props();
 

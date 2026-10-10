@@ -77,7 +77,7 @@ export default {
     title: 'Badge',
     purpose: 'แสดงสถานะ หรือจำนวนสั้น ๆ',
     why: [
-      'แต่ละสถานะของ Task มี tone ตายตัว จึงจำได้ก่อนจะอ่าน: slate คือ Open, blue คือ In progress, amber คือ Resolved, green คือ Done, red คือ Cancelled',
+      'แต่ละสถานะของ Task มี tone ตายตัว จึงจำได้ก่อนจะอ่าน: slate คือ Open, blue คือ In progress, amber คือ Resolved, green คือ Done, red คือ Cancelled, violet คือ Transferred',
       'Resolved ใช้ amber โดยตั้งใจ งานถูกเสนอว่าเสร็จแล้ว แต่ยังรอคนมายืนยัน',
     ],
     use: ['ส่ง `status` สำหรับสถานะของ Task หรือ Thread ส่วนกรณีอื่นส่ง `tone` กับ `label`'],

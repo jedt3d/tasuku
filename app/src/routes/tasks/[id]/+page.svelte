@@ -10,6 +10,7 @@
   import { formatDate, formatDateTime, t } from '@ui/i18n/index.svelte.js';
   import { formatSize, prepare } from '#lib/attachments.js';
   import { auth, displayName } from '#lib/session.svelte.js';
+  import { FINAL } from '#lib/status.js';
   import { supabase } from '#lib/supabase.js';
 
   // Row Level Security leaves out of an answer what the reader may not read (ADR 0002): to a
@@ -18,7 +19,7 @@
     'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
 
   const entryColumns =
-    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email), attachments(id, path, name, mime_type, size, deleted_at)';
+    'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, next_task_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email), attachments(id, path, name, mime_type, size, deleted_at)';
   // The database counts the same 15 minutes and has the last word (ADR 0002).
   const EDIT_WINDOW = 15 * 60 * 1000;
 
@@ -44,10 +45,14 @@
 
   // The buttons are a convenience: the database refuses everyone else (ADR 0002).
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
-  const closed = $derived(['done', 'cancelled'].includes(task?.status));
+  const closed = $derived(FINAL.includes(task?.status));
   const canManage = $derived((task?.owner_id === auth.userId || isTaskMaster) && !closed);
-  // The Customer of a Resolved Task has been asked and given a time to answer: Reopen it first.
-  const canChooseCustomer = $derived(canManage && task?.status !== 'resolved');
+  // A Customer is added to a Task that has none, and never replaced (#39). A Resolved Task is
+  // Reopened first.
+  const canAddCustomer = $derived(canManage && !task?.customer_id && task?.status !== 'resolved');
+  const live = $derived(task?.status === 'open' || task?.status === 'in_progress');
+  // The Task that carries a Transferred one on, from the event that says so.
+  const continuedIn = $derived(entries.find((entry) => entry.next_task_id)?.next_task_id);
   const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
   const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
   // The Customer comments, and changes nothing else.
@@ -57,7 +62,6 @@
   // What the reader may do to the status, each with the label of its button.
   const moves = $derived.by(() => {
     const status = task?.status;
-    const live = status === 'open' || status === 'in_progress';
     const ownsAlone = task?.owner_id === auth.userId && !task?.customer_id;
     const confirms = isTaskMaster && status === 'resolved';
     return [
@@ -88,7 +92,8 @@
     const collaborating = new Set();
     let owner = null;
     return entries.map((entry) => {
-      if (entry.kind === 'opened') owner = entry.author_id;
+      // Opened by its Owner, or for them by a Task Master who transferred an earlier Task.
+      if (entry.kind === 'opened') owner = entry.subject_id ?? entry.author_id;
       if (entry.kind === 'owner_changed') {
         collaborating.add(owner);
         collaborating.delete(entry.subject_id);
@@ -101,8 +106,14 @@
         : entry.customer_id
           ? customerName(entry.customer)
           : 'Tasuku';
-      if (entry.kind === 'opened') return { kind: 'event', icon: 'plus', actor, key: 'event.opened', at: entry.created_at };
-      if (entry.kind === 'moved') return { kind: 'event', actor, key: 'event.movedTo', status: entry.status, at: entry.created_at };
+      if (entry.kind === 'opened') {
+        const vars = { name: staffName(entry.subject_id, entry.subject) };
+        return { kind: 'event', icon: 'plus', actor, key: entry.subject_id ? 'event.openedFor' : 'event.opened', vars, at: entry.created_at };
+      }
+      if (entry.kind === 'moved') {
+        const vars = { task: `#${entry.next_task_id}` };
+        return { kind: 'event', actor, key: entry.next_task_id ? 'event.continuedIn' : 'event.movedTo', vars, status: entry.status, at: entry.created_at };
+      }
       if (entry.kind === 'collaborator_added' || entry.kind === 'collaborator_removed') {
         const key = entry.kind === 'collaborator_added' ? 'event.addedCollaborator' : 'event.removedCollaborator';
         const name = staffName(entry.subject_id, entry.subject);
@@ -349,13 +360,15 @@
     await refresh(page.params.id);
   }
 
-  async function removeCustomer() {
-    if (busy) return;
+  // One action: the new Task is opened and this one becomes Transferred, which is final. The
+  // reader goes on where the work does: the new Task, which still needs its Customer.
+  async function transfer() {
+    if (busy || !confirm(t('task.confirmTransfer'))) return;
     busy = true;
-    const { error } = await supabase.rpc('remove_customer', { task: task.id });
+    const { data, error } = await supabase.rpc('transfer_task', { task: task.id });
     busy = false;
-    await refresh(page.params.id);
-    if (error) problem = 'common.error';
+    if (error) return (problem = 'common.error');
+    await goto(`/tasks/${data}`);
   }
 
   // The Organization belongs to the Customer, not to this Task: it shows on every Task they are on.
@@ -498,13 +511,6 @@
             {#if task.customer}
               <li>
                 {task.customer.email}
-                {#if canChooseCustomer}
-                  <button
-                    class="x"
-                    aria-label={t('task.removeCustomer', { name: task.customer.email })}
-                    onclick={removeCustomer}><Icon name="x" size={14} /></button
-                  >
-                {/if}
               </li>
             {:else}
               <li class="none">{t('org.noCustomer')}</li>
@@ -524,7 +530,7 @@
               </select>
             </label>
           {/if}
-          {#if canChooseCustomer}
+          {#if canAddCustomer}
             <form class="add" onsubmit={setCustomer}>
               <input
                 type="email"
@@ -541,12 +547,14 @@
               <Button
                 type="submit"
                 size="sm"
-                icon={task.customer ? 'edit' : 'plus'}
-                label={t(task.customer ? 'common.change' : 'common.add')}
+                icon="plus"
+                label={t('common.add')}
                 disabled={busy || !customerEmail.trim()}
               />
             </form>
             <small>{t('task.customerHint')}</small>
+          {:else if canManage && live && task.customer}
+            <small>{t('task.customerFixed')}</small>
           {/if}
         </dd>
         <dt>{t('task.collaborators')}</dt>
@@ -590,6 +598,16 @@
             {/if}
           </dd>
         {/if}
+        {#if continuedIn}
+          <dt>{t('task.continuedIn')}</dt>
+          <dd>
+            {#if auth.staff}
+              <a href="/tasks/{continuedIn}">#{continuedIn}</a>
+            {:else}
+              #{continuedIn}
+            {/if}
+          </dd>
+        {/if}
         {#if task.due_date}
           <dt>{t('task.dueDate')}</dt>
           <dd>{formatDate(task.due_date, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
@@ -602,6 +620,9 @@
       {#if moves.length || auth.staff}
         <div class="actions">
           {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newRelated')}</a>{/if}
+          {#if canManage && live}
+            <Button size="sm" label={t('task.transfer')} disabled={busy} onclick={transfer} />
+          {/if}
           {#each moves as { action, label, variant } (action)}
             <Button size="sm" {variant} label={t(label)} disabled={busy} onclick={() => move(action)} />
           {/each}

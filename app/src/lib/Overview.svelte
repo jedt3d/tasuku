@@ -11,6 +11,7 @@
   import { formatDate, t } from '@ui/i18n/index.svelte.js';
   import { page } from '$app/state';
   import { auth, displayName } from '#lib/session.svelte.js';
+  import { STATUSES } from '#lib/status.js';
   import { supabase } from '#lib/supabase.js';
 
   const blank = { title: '', description: '', due_date: '', organization_id: '', earlier_task_id: '' };
@@ -26,14 +27,14 @@
   let busy = $state(false);
   let organizations = $state([]); // every Organization, by name
   // The count next to a Staff member on the Staff page leads here with that person's id. It lists
-  // every Task they own, whatever its status; the count is of those not Done or Cancelled.
+  // every Task they own, whatever its status; the count is of the unfinished ones.
   let owner = $state(page.url.searchParams.get('owner') ?? ''); // the Owner chosen in "All Tasks", or '' for any
   let staff = $state([]); // every Staff member, removed ones included: their Tasks still name them
   let organization = $state(''); // the id chosen in "By Organization", or '' before one is chosen
   let naming = $state(''); // the name of the Organization being created
 
   const statuses = $derived(
-    ['all', 'open', 'in_progress', 'resolved', 'done', 'cancelled'].map((id) => ({
+    ['all', ...STATUSES].map((id) => ({
       id,
       label: id === 'all' ? t('filter.allTasks') : t(`status.${id}`),
     })),
