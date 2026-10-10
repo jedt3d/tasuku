@@ -35,11 +35,11 @@ A Task that exists but that no Staff member has commented on yet.
 A Task that Staff have started working on.
 
 **Resolved**:
-A Task whose Owner considers the work finished and has proposed closing it; it still awaits confirmation.
+A Task whose Owner considers the work finished and has proposed closing it; it still awaits confirmation. A Resolved Task nobody answers becomes Done by itself once the closure period (48 hours unless a Task Master changes it) has passed; the Customer is reminded before that. Its Customer is not replaced or taken off until it is Reopened.
 _Avoid_: Request for review, pending close
 
 **Done**:
-A Task whose closure is final, either confirmed after Resolved or closed directly by the Customer.
+A Task whose closure is final: confirmed after Resolved, closed directly by the Customer, or closed by itself because a Resolved Task was not answered in time.
 _Avoid_: Closed, completed
 
 **Reopen**:

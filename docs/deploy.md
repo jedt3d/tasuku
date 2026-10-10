@@ -124,7 +124,7 @@ Locally this is `[auth.sessions] timebox = "168h"` in `supabase/config.toml`. On
 
 ## 8. Notification emails (open)
 
-Being added to a Task, a comment by someone else, a Task becoming Resolved and the Customer cancelling each send an email (#10). The database writes who must be told into `private.email_outbox`, in the transaction of the event, and calls the Edge Function `send-emails` (pg_net); pg_cron calls it again every minute while something is waiting. An email that fails stays in the outbox and is tried five times. None of this has been tried on the cloud project yet.
+Being added to a Task, a comment by someone else, a Task becoming Resolved and the Customer cancelling each send an email (#10). The database writes who must be told into `private.email_outbox`, in the transaction of the event, and calls the Edge Function `send-emails` (pg_net); pg_cron calls it again every minute while something is waiting. An email that fails stays in the outbox and is tried five times. Automatic closure (#11) adds a second pg_cron job, `close-due-tasks`, every 15 minutes: it marks Resolved Tasks past their time Done and queues the reminder, and the Task closing by itself sends an email to its Customer too. It needs nothing set up beyond the migration. None of this has been tried on the cloud project yet.
 
 The migration installs `pg_net` and `pg_cron`. Edge Functions cannot open ports 25 and 587, so the function sends through Mailgun's HTTP API, not SMTP: it needs a Mailgun API key, which is not the SMTP password of section 3.
 

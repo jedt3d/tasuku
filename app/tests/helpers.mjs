@@ -8,7 +8,7 @@ export const env = localSupabase();
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 
 // The secret key bypasses Row Level Security: tests use it only to arrange, never to assert. It
-// arranges users and the age of a comment.
+// arranges users and the age of a comment, and runs the scheduled job as pg_cron does.
 export const admin = createClient(env.url, env.secretKey, options);
 export const anonymous = () => createClient(env.url, env.publishableKey, options);
 
@@ -86,6 +86,14 @@ export async function customerOf(client, task, email = uniqueEmail('customer')) 
 // Moves `task` as `client`: `action` is resolve, complete (Done), reopen or cancel.
 // Resolves to the API's answer, error included.
 export const move = (client, task, action) => client.rpc(`${action}_task`, { task: task.id });
+
+// Runs automatic closure as if it were `hours` from now: the job is not open to anyone signed in,
+// and the status is still changed by the function under test. Every Resolved Task of the local
+// stack that is due by then is closed with it.
+export async function runClosure(hours = 0) {
+  const { error } = await admin.rpc('close_due_tasks', { as_of: new Date(Date.now() + hours * 3600e3).toISOString() });
+  if (error) throw error;
+}
 
 // Arranges a Task that is Done or Cancelled, acting as someone who may close it.
 export async function close(client, task, status) {

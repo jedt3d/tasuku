@@ -14,6 +14,7 @@
   let problem = $state(''); // a message key, or '' when there is nothing to report
   let busy = $state(false);
   let unerased = $state([]); // for a Task Master: deleted files whose object is still in Storage
+  let periods = $state(null); // for a Task Master: the two periods of automatic closure
 
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
 
@@ -25,6 +26,17 @@
     if (error) problem = 'common.error';
     else people = data;
     if (isTaskMaster) unerased = (await supabase.rpc('unerased_attachments')).data ?? [];
+    if (isTaskMaster) periods = (await supabase.from('settings').select('closure_hours, reminder_hours').single()).data;
+  }
+
+  function savePeriods(event) {
+    event.preventDefault();
+    change(async () => {
+      const { error } = await supabase.from('settings').update(periods).eq('id', true);
+      if (!error) return '';
+      // 23514: the limits; 22P02: not a whole number.
+      return ['23514', '22P02'].includes(error.code) ? 'settings.invalid' : 'common.error';
+    });
   }
 
   // Finishes what a deletion left undone. Nobody could read these files; now they are gone.
@@ -114,6 +126,18 @@
           />
           <Button type="submit" variant="primary" icon="userPlus" label={t('common.add')} disabled={busy} />
         </form>
+        {#if periods}
+          <form onsubmit={savePeriods}>
+            <Field
+              label={t('settings.closureHours')}
+              type="number"
+              hint={t('settings.closureHint')}
+              bind:value={periods.closure_hours}
+            />
+            <Field label={t('settings.reminderHours')} type="number" bind:value={periods.reminder_hours} />
+            <Button type="submit" label={t('common.save')} disabled={busy} />
+          </form>
+        {/if}
       {/if}
       {#if problem}<p class="error" role="alert">{t(problem)}</p>{/if}
       {#if unerased.length}

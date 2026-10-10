@@ -147,8 +147,10 @@ test('every transition is on the Timeline, naming the Staff member or the Custom
 test('a Staff member who is the Customer of a Task confirms it, as Staff', async () => {
   const email = uniqueEmail('staff');
   const colleague = await signInAs(email, { staff: {} });
-  const task = await taskIn('resolved', { customer: false });
-  await addCustomer(people.owner, task, email);
+  // The Customer is on the Task before it is Resolved: none is added while it is (#11).
+  const task = await taskIn('in_progress', { customer: false });
+  assert.equal((await addCustomer(people.owner, task, email)).error, null);
+  assert.equal((await move(people.owner, task, 'resolve')).error, null);
 
   assert.equal((await move(people.owner, task, 'complete')).error?.code, '42501');
   assert.equal((await move(colleague, task, 'resolve')).error?.code, '42501');
