@@ -140,6 +140,12 @@ erDiagram
     uuid staff_id FK
     datetime added_at
   }
+  TASK_LINK {
+    bigint task_id FK
+    bigint related_task_id FK
+    uuid added_by FK
+    datetime added_at
+  }
   TIMELINE_ENTRY {
     bigint id PK
     bigint task_id FK
@@ -181,7 +187,9 @@ erDiagram
   CUSTOMER |o--o{ TASK : "is added to"
   ORGANIZATION |o--o{ TASK : labels
   ORGANIZATION |o--o{ CUSTOMER : "belongs to"
-  TASK }o--o| TASK : "refers to"
+  TASK }o--o| TASK : "carries on from"
+  TASK ||--o{ TASK_LINK : "is one of the pair"
+  STAFF ||--o{ TASK_LINK : adds
   TASK ||--o{ COLLABORATOR : has
   STAFF ||--o{ COLLABORATOR : is
   TASK ||--o{ TIMELINE_ENTRY : records
