@@ -85,14 +85,14 @@ stateDiagram-v2
   Open --> InProgress : first Staff comment
   InProgress --> Resolved : Owner or Task Master
   Resolved --> InProgress : Reopen, Customer or Task Master
-  Resolved --> Done : Customer, Task Master, or auto after 48 h
+  Resolved --> Done : Customer, Task Master, or by itself after 48 h
   Open --> Done : Customer
   InProgress --> Done : Customer
   Open --> Cancelled : Customer, Owner or Task Master
   InProgress --> Cancelled : Customer, Owner or Task Master
   Done --> [*]
   Cancelled --> [*]
-  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. While Resolved the Customer is not replaced or taken off
   note right of Open : A Customer comment leaves the Task Open
   class Open grey
   class InProgress blue
@@ -114,4 +114,4 @@ stateDiagram-v2
 
 - Done and Cancelled are terminal (spec #1 story 70). Cancelling a Resolved Task is not drawn: the spec table allows Cancelled only from Open and In progress.
 - Who may Reopen: CONTEXT.md does not say, spec #1 says Customer or Task Master, and v1-plan.md says Customer only. As built in #8 it is the Customer or a Task Master, as the spec says (confirmed by the user, 7 Oct 2026); issue #8 names only the Customer.
-- The 48 h closure period (and the 24 h reminder before it) is a Task Master setting, see 09 and the spec.
+- Automatic closure (#11) is built. The time a Task closes by itself is fixed when it becomes Resolved (`tasks.closes_at`), from the closure period (48 h) a Task Master sets on the Staff page; Reopen and Resolved again starts over, and a change of the period applies to Tasks Resolved from then on. A job checks every 15 minutes. The Customer is reminded once (24 h before, also a setting) and told once the Task has closed. Decided by the user on 11 Oct 2026: a Resolved Task with no Customer closes by itself too, and the Customer of a Resolved Task is not replaced or taken off until it is Reopened. An Owner who is not a Task Master cannot Reopen, so asks one (listed in PR #38 for the user to confirm).
