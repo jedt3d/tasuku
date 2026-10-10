@@ -1,0 +1,8 @@
+{
+  // The Worker that serves the built app (docs/deploy.md). No secret belongs in this file.
+  "name": "tasuku",
+  "compatibility_date": "2026-10-11",
+  "workers_dev": false,
+  "assets": { "directory": "./build", "not_found_handling": "single-page-application" },
+  "routes": [{ "pattern": "tasuku.servicework.cloud", "custom_domain": true }]
+}

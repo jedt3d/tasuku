@@ -113,8 +113,8 @@ flowchart TB
   subgraph supa["Supabase cloud, ap-southeast-1"]
     direction LR
     auth["Auth<br/>Site URL and redirect allow list"]:::violet
-    db[("Postgres with RLS<br/>schema not applied yet")]:::yellow
-    fn["Edge Function send-emails<br/>not deployed yet"]:::yellow
+    db[("Postgres with RLS<br/>12 migrations, sign-up closed")]:::violet
+    fn["Edge Function send-emails<br/>deployed, no secrets yet"]:::yellow
   end
   subgraph mail["Email"]
     direction LR
@@ -130,7 +130,7 @@ flowchart TB
   db -.->|"outbox, pg_net and pg_cron"| fn
   fn -.->|"HTTP API, open"| mailgun
   dev -->|"npx wrangler deploy"| worker
-  dev -.->|"supabase db push, open"| db
+  dev -->|"supabase db push"| db
   devserver -.->|"redirect allowed"| auth
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
