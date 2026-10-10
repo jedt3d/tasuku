@@ -166,7 +166,7 @@ VITE_SUPABASE_URL=https://nhibizypckyznlzprsnv.supabase.co VITE_SUPABASE_PUBLISH
 npx wrangler deploy
 ```
 
-The functions go first. `send-emails` fails its whole batch when the outbox holds a kind of email it does not know (found in #12), so it must be on the cloud before, or together with, the migration that adds the kind. The app goes last, so it never calls something the database does not have yet. The test suite is never run against the cloud project: it creates hundreds of accounts and Tasks.
+The functions go first. `send-emails` fails its whole batch when the outbox holds a kind of email it does not know (found in #12), so it must be on the cloud before, or together with, the migration that adds the kind. The app goes last, so it never calls something the database does not have yet. When a merge changed nothing under `supabase/functions/` and adds no kind of email, the first step can be left out, as it was for #41. The test suite is never run against the cloud project: it creates hundreds of accounts and Tasks.
 
 ## Sign-up is closed
 
