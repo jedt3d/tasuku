@@ -210,4 +210,11 @@ export default {
   'attach.wrongType': '{name} は画像でも PDF でもありません。他の種類のファイルは添付できません。',
   'attach.unerased': '削除済みのファイル {n} 件が Storage に残っています（消去が完了しませんでした）。誰も開けません。タスク:',
   'attach.eraseNow': '今すぐ消去',
+  // Reassigning the Owner (#12).
+  'event.changedOwner': 'が {name} をオーナーにしました',
+  'task.reassign': 'オーナーを変更',
+  'task.newOwner': '新しいオーナー',
+  'filter.anyOwner': 'すべてのオーナー',
+  'staff.unfinished': '未完了のタスク: {n} 件',
+  'staff.confirmRemoveOwner': '{email} を削除しますか？ただちにアクセスできなくなります。オーナーを務める未完了のタスク: {n} 件。削除後にオーナーを変更してください。',
 };

@@ -87,6 +87,11 @@ export async function customerOf(client, task, email = uniqueEmail('customer')) 
 // Resolves to the API's answer, error included.
 export const move = (client, task, action) => client.rpc(`${action}_task`, { task: task.id });
 
+// Gives `task` to the Staff member signed in as `staff`, acting as `client`.
+// Resolves to the API's answer, error included.
+export const reassign = async (client, task, staff) =>
+  client.rpc('reassign_task', { task: task.id, new_owner: await userId(staff) });
+
 // Runs automatic closure as if it were `hours` from now: the job is not open to anyone signed in,
 // and the status is still changed by the function under test. Every Resolved Task of the local
 // stack that is due by then is closed with it.

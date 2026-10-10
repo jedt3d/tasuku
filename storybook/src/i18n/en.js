@@ -208,4 +208,11 @@ export default {
   'attach.wrongType': '{name} is not an image or a PDF. Other file types cannot be attached.',
   'attach.unerased': 'Deleted files still in Storage: {n}. Erasing them did not finish. Nobody can open them. Tasks:',
   'attach.eraseNow': 'Erase now',
+  // Reassigning the Owner (#12).
+  'event.changedOwner': 'made {name} the Owner',
+  'task.reassign': 'Reassign',
+  'task.newOwner': 'New Owner',
+  'filter.anyOwner': 'Any Owner',
+  'staff.unfinished': 'Unfinished Tasks: {n}',
+  'staff.confirmRemoveOwner': 'Remove {email}? They lose access immediately. Unfinished Tasks they own: {n}. Reassign those afterwards.',
 };

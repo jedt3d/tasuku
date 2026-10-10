@@ -23,4 +23,12 @@ export default {
     subject: 'カスタマーがタスク #{id} をキャンセルしました: {title}',
     body: '{actor} がタスク #{id}「{title}」をキャンセルしました。これ以上の作業は不要です。\n\nタスクを開く:\n{link}',
   },
+  assigned: {
+    subject: 'タスク #{id} のオーナーになりました: {title}',
+    body: '{actor} があなたをタスク #{id}「{title}」のオーナーにしました。\n\nタスクを開く:\n{link}',
+  },
+  unassigned: {
+    subject: 'タスク #{id} のオーナーが変わりました: {title}',
+    body: '{actor} がタスク #{id}「{title}」を {owner} に引き継ぎました。あなたはコラボレーターとして残ります。\n\nタスクを開く:\n{link}',
+  },
 };

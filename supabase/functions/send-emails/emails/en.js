@@ -23,4 +23,12 @@ export default {
     subject: 'The Customer cancelled Task #{id}: {title}',
     body: '{actor} cancelled Task #{id}, "{title}". No more work is needed on it.\n\nOpen the Task:\n{link}',
   },
+  assigned: {
+    subject: 'You are now the Owner of Task #{id}: {title}',
+    body: '{actor} made you the Owner of Task #{id}, "{title}".\n\nOpen the Task:\n{link}',
+  },
+  unassigned: {
+    subject: 'Task #{id} has a new Owner: {title}',
+    body: '{actor} gave Task #{id}, "{title}", to {owner}. You stay on it as a Collaborator.\n\nOpen the Task:\n{link}',
+  },
 };
