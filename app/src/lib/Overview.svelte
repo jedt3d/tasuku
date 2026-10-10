@@ -25,7 +25,8 @@
   let draft = $state({ ...blank, earlier_task_id: earlier });
   let busy = $state(false);
   let organizations = $state([]); // every Organization, by name
-  // "Tasks" next to a Staff member on the Staff page leads here with that person's id.
+  // The count next to a Staff member on the Staff page leads here with that person's id. It lists
+  // every Task they own, whatever its status; the count is of those not Done or Cancelled.
   let owner = $state(page.url.searchParams.get('owner') ?? ''); // the Owner chosen in "All Tasks", or '' for any
   let staff = $state([]); // every Staff member, removed ones included: their Tasks still name them
   let organization = $state(''); // the id chosen in "By Organization", or '' before one is chosen

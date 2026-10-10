@@ -77,7 +77,7 @@
   const customerName = (customer) => customer?.email ?? t('role.customer');
   const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !collaboratorIds.includes(s.user_id)));
   // Who a Task Master can give the Task to: not its Customer, who would have nobody to confirm to.
-  const heirs = $derived(staff.filter((s) => s.user_id !== task?.owner_id && s.user_id !== task?.customer_id));
+  const possibleOwners = $derived(staff.filter((s) => s.user_id !== task?.owner_id && s.user_id !== task?.customer_id));
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
   // The entries as the Timeline component draws them. A comment is labelled by what its author was
@@ -477,11 +477,11 @@
         <dt>{t('task.owner')}</dt>
         <dd>
           {staffName(task.owner_id, task.owner)}
-          {#if isTaskMaster && !closed && heirs.length}
+          {#if isTaskMaster && !closed && possibleOwners.length}
             <form class="add" onsubmit={reassign}>
               <select bind:value={newOwner} aria-label={t('task.newOwner')}>
                 <option value="">{t('task.newOwner')}</option>
-                {#each heirs as person (person.user_id)}
+                {#each possibleOwners as person (person.user_id)}
                   <option value={person.user_id}>{displayName(person)}</option>
                 {/each}
               </select>

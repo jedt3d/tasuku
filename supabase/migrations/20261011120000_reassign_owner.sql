@@ -54,6 +54,27 @@ create or replace function private.record_collaborator_change() returns trigger
   end;
   $$;
 
+-- "The Owner is never a Collaborator" was checked by the policy alone (`private.can_collaborate`,
+-- #6), which reads the Task as it was when the statement began. Now that the Owner changes, a
+-- Staff member added as a Collaborator at the moment the Task is given to them would be both. So
+-- the row waits here for whoever holds the Task, and the Owner is read again.
+create function private.keep_owner_out_of_collaborators() returns trigger
+  language plpgsql security definer set search_path = ''
+  as $$
+  begin
+    perform from public.tasks where id = new.task_id for share;
+    if exists (select from public.tasks where id = new.task_id and owner_id = new.staff_id) then
+      raise exception 'the Owner of a Task is not also a Collaborator on it' using errcode = '42501';
+    end if;
+    return new;
+  end;
+  $$;
+
+create trigger keep_owner_out_of_collaborators
+  before insert on public.task_collaborators
+  for each row
+  execute function private.keep_owner_out_of_collaborators();
+
 -- Two more emails: 'assigned' to the new Owner, 'unassigned' to the previous one.
 alter table private.email_outbox
   drop constraint email_outbox_kind_check,
@@ -114,8 +135,8 @@ create function public.reassign_task(task bigint, new_owner uuid) returns void
   $$;
 
 -- As in #11, and: an email about a change of Owner is dropped once the Task has changed Owner
--- again in a way that makes it wrong. `owner` is the Owner of the Task, for the email that names
--- who the Task went to.
+-- again in a way that makes it wrong. `owner` is who the Task went to, for the email that says so
+-- (the Owner of the Task for any other kind).
 drop function public.claim_emails();
 create function public.claim_emails()
   returns table (
@@ -183,7 +204,8 @@ create function public.claim_emails()
     from claimed c
       join public.timeline_entries e on e.id = c.entry_id
       join public.tasks t on t.id = e.task_id
-      join public.staff owned_by on owned_by.user_id = t.owner_id
+      join public.staff owned_by
+        on owned_by.user_id = case when e.kind = 'owner_changed' then e.subject_id else t.owner_id end
       left join public.staff to_staff on to_staff.user_id = c.recipient
       left join public.customers to_customer on to_customer.user_id = c.recipient
       left join public.staff by_staff
@@ -192,7 +214,8 @@ create function public.claim_emails()
     order by c.id;
   $$;
 
-revoke execute on function public.reassign_task(bigint, uuid), public.claim_emails()
+revoke execute on function
+  public.reassign_task(bigint, uuid), public.claim_emails(), private.keep_owner_out_of_collaborators()
   from public, anon, authenticated;
 grant execute on function public.reassign_task(bigint, uuid) to authenticated;
 grant execute on function public.claim_emails() to service_role;

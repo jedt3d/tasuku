@@ -117,6 +117,24 @@ test('only a Task Master reassigns: the Owner, a Collaborator, other Staff, the 
   assert.equal((await read(master, task)).owner_id, await userId(owner));
 });
 
+test('the Customer of the Task reads the change of Owner, and the name of the new Owner', async () => {
+  const master = await taskMaster();
+  const owner = await staffMember();
+  const next = await staffMember();
+  const { error: named } = await next.from('staff').update({ name: 'Somchai' }).eq('user_id', await userId(next));
+  assert.equal(named, null);
+  const task = await openTask(owner);
+  const customer = await customerOf(owner, task);
+
+  assert.equal((await reassign(master, task, next)).error, null);
+
+  assert.deepEqual((await events(customer, task)).at(-1), {
+    kind: 'owner_changed', author_id: await userId(master), subject_id: await userId(next),
+  });
+  const { data } = await customer.rpc('staff_on_task', { task: task.id });
+  assert.ok(data.some((person) => person.name === 'Somchai'));
+});
+
 test('a Task in progress or Resolved is reassigned, and a Resolved Task keeps its closing time', async () => {
   const master = await taskMaster();
   const owner = await staffMember();
@@ -163,6 +181,7 @@ test('the new Owner is Staff who has not been removed and is not the Customer of
   for (const person of [gone, staffCustomer, outsider]) {
     assert.equal((await reassign(master, task, person)).error?.code, '42501');
   }
+  assert.equal((await master.rpc('reassign_task', { task: task.id, new_owner: null })).error?.code, '42501');
   assert.equal((await read(master, task)).owner_id, await userId(owner));
 });
 

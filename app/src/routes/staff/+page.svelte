@@ -28,6 +28,7 @@
     else people = data;
     // ponytail: counted here from one page of rows (1000); count in the database if that is passed.
     const live = await supabase.from('tasks').select('owner_id').not('status', 'in', '(done,cancelled)');
+    if (live.error) problem = 'common.error';
     owned = {};
     for (const { owner_id } of live.data ?? []) owned[owner_id] = (owned[owner_id] ?? 0) + 1;
     if (isTaskMaster) unerased = (await supabase.rpc('unerased_attachments')).data ?? [];
