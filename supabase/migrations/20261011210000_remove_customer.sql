@@ -88,14 +88,15 @@ create function public.remove_customer(customer uuid, final_status text default 
     if not private.is_staff() then
       raise exception 'only Staff remove a Customer' using errcode = '42501';
     end if;
+    -- Held, so they are not removed from Staff or brought back in the meantime. The Staff record
+    -- comes first, as in `remove_staff`, so the two do not wait for each other.
+    perform from public.staff where user_id = customer and removed_at is null for share;
+    also_staff := found;
     -- Held until the end, so the Customer is not added to a Task (`set_customer`) meanwhile.
     select removed_at into gone from public.customers where user_id = customer for update;
     if not found then
       raise exception 'no such Customer' using errcode = 'P0002';
     end if;
-    -- Held too, so they are not removed from Staff or brought back in the meantime.
-    perform from public.staff where user_id = customer and removed_at is null for share;
-    also_staff := found;
     if not (
       private.is_task_master()
       or (

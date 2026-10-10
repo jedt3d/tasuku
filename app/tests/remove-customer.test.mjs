@@ -148,7 +148,9 @@ test('a removed Customer is not added to a Task until a Task Master gives the ac
   const outsider = await addCustomer(await staffMember(), next, email);
   assert.equal(await refusal(outsider), 'not_allowed');
 
-  for (const client of [owner, await staffMember(), customer, await signInAs(uniqueEmail('stranger')), anonymous()]) {
+  const collaborator = await staffMember();
+  await addCollaborator(owner, first, collaborator);
+  for (const client of [owner, collaborator, await staffMember(), customer, await signInAs(uniqueEmail('stranger')), anonymous()]) {
     assert.equal((await restoreCustomer(client, customer)).error?.code, '42501');
   }
   assert.deepEqual(await tasksOf(customer), []);
@@ -192,6 +194,7 @@ test('a Resolved Task of a removed Customer becomes Done by itself, with no remi
   assert.equal((await move(owner, task, 'resolve')).error, null);
 
   // Nobody is there to confirm: the Owner still does not confirm their own proposal.
+  assert.equal((await move(customer, task, 'reopen')).error?.code, '42501');
   assert.equal((await move(owner, task, 'complete')).error?.code, '42501');
   await runClosure(25);
   assert.equal(await statusOf(owner, task), 'resolved');
@@ -200,6 +203,7 @@ test('a Resolved Task of a removed Customer becomes Done by itself, with no remi
   assert.equal(await statusOf(owner, task), 'done');
   await settle(1500);
   assert.equal((await emailsTo(toCustomer)).length, 2);
+  assert.equal((await emailsTo(await emailOf(owner))).length, 0);
   // A Task Master answers a Resolved Task as before.
   const other = await openTask(owner);
   const gone = await customerOf(owner, other);
