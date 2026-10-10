@@ -228,3 +228,24 @@ test('an Owner who transfers their own Task gets no email, and a Customer added 
   await settle();
   assert.equal((await emailsTo(toOwner)).length, 0);
 });
+
+test('a Task Master transfers the Task of an Owner removed from Staff, who stays its Owner and gets no email', async () => {
+  const master = await taskMaster();
+  const owner = await staffMember();
+  const collaborator = await staffMember();
+  const task = await openTask(owner);
+  await addCollaborator(owner, task, collaborator);
+  const [toOwner, toCollaborator] = [await emailOf(owner), await emailOf(collaborator)];
+  await emailsTo(toCollaborator, 1);
+  assert.equal((await master.rpc('remove_staff', { staff_id: await userId(owner) })).error, null);
+
+  const next = await transferred(master, task);
+
+  assert.equal(next.owner_id, await userId(owner));
+  // The Collaborator's email has arrived, so the Owner's would have too.
+  await emailsTo(toCollaborator, 2);
+  await settle();
+  assert.equal((await emailsTo(toOwner)).length, 0);
+  // A Task Master then gives the new Task to someone else, as with any Task (#12).
+  assert.equal((await reassign(master, next, collaborator)).error, null);
+});
