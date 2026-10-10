@@ -130,27 +130,22 @@ test('a Staff member who is the Customer of a Task cancels as the Customer, and 
   assert.equal((await emailsTo(address)).length, 1);
 });
 
-test('a removed Staff member and a Customer who was replaced get nothing more', async () => {
+test('a removed Staff member gets nothing more', async () => {
   const owner = await staffMember();
   const master = await taskMaster();
   const helper = await staffMember();
   const task = await openTask(owner);
   await addCollaborator(owner, task, helper);
-  const [toHelper, toFirst, toSecond] = [await emailOf(helper), uniqueEmail('first'), uniqueEmail('second')];
-  // Each has the email for being added before anything changes: one that is still waiting when
-  // its recipient leaves the Task is not sent either.
-  await customerOf(owner, task, toFirst);
-  assert.equal((await emailsTo(toFirst, 1)).length, 1);
-  await customerOf(owner, task, toSecond);
-  await Promise.all([toHelper, toSecond].map((to) => emailsTo(to, 1)));
+  const [toHelper, toCustomer] = [await emailOf(helper), uniqueEmail('customer')];
+  await customerOf(owner, task, toCustomer);
+  await Promise.all([toHelper, toCustomer].map((to) => emailsTo(to, 1)));
   assert.equal((await master.rpc('remove_staff', { staff_id: await userId(helper) })).error, null);
 
   assert.equal((await comment(owner, task)).error, null);
 
-  emailAbout(await emailsTo(toSecond, 2), 'comment', task, { to: toSecond, actor: 'PSP' });
+  emailAbout(await emailsTo(toCustomer, 2), 'comment', task, { to: toCustomer, actor: 'PSP' });
   await settle();
   assert.equal((await emailsTo(toHelper)).length, 1);
-  assert.equal((await emailsTo(toFirst)).length, 1);
 });
 
 // A Task of `owner` that is Resolved, with a Customer who has the three emails so far: added, the

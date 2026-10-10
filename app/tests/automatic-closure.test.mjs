@@ -60,20 +60,18 @@ test('a Task Reopened or confirmed before its time is not closed by itself', asy
   assert.equal(data.length, 1);
 });
 
-test('the Customer of a Resolved Task is not replaced or taken off until it is Reopened', async () => {
+test('a Resolved Task takes no Customer until it is Reopened', async () => {
   const owner = await staffMember();
   const master = await taskMaster();
-  const { task, customer } = await resolvedTask(owner);
-  const remove = (client) => client.rpc('remove_customer', { task: task.id });
+  const { task } = await resolvedTask(owner, { customer: false });
+  const email = uniqueEmail('customer');
 
   for (const client of [owner, master]) {
-    assert.equal((await remove(client)).error?.code, '42501');
-    assert.equal((await addCustomer(client, task, uniqueEmail('customer'))).error?.context?.status, 403);
+    assert.equal((await addCustomer(client, task, email)).error?.context?.status, 403);
   }
-  assert.equal((await customer.from('tasks').select('id').eq('id', task.id)).data.length, 1);
 
   assert.equal((await move(master, task, 'reopen')).error, null);
-  assert.equal((await remove(owner)).error, null);
+  assert.equal((await addCustomer(owner, task, email)).error, null);
 });
 
 test('a Task Master changes the closure period and the reminder lead time; nobody else does', async () => {

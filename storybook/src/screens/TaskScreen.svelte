@@ -107,10 +107,7 @@
           {/each}
         </section>
         <section>
-          <h3>
-            {t('task.customer')}
-            {#if canWrite}<button class="act" aria-label={t('task.changeCustomer')}><Icon name="edit" size={14} />{t('common.change')}</button>{/if}
-          </h3>
+          <h3>{t('task.customer')}</h3>
           <div class="person">
             <Avatar name={customer.name} size={32} />
             <span>{customer.name}<small>{customer.email}</small></span>

@@ -31,4 +31,8 @@ export default {
     subject: 'Task #{id} has a new Owner: {title}',
     body: '{actor} gave Task #{id}, "{title}", to {owner}. You stay on it as a Collaborator.\n\nOpen the Task:\n{link}',
   },
+  transferred: {
+    subject: 'Task #{id} continues your Task: {title}',
+    body: '{actor} continued your Task in a new Task, #{id}, "{title}". You are its Owner; it has no Customer yet.\n\nOpen the Task:\n{link}',
+  },
 };

@@ -12,6 +12,7 @@ import {
   signInAs,
   staffMember,
   taskMaster,
+  transfer,
   uniqueEmail,
   upload,
   userId,
@@ -155,19 +156,21 @@ test('a file is fetched only by someone who may read the Task', async () => {
   assert.equal(await fetchFile(owner, loose.path), null);
 });
 
-test('a Customer who is replaced loses the files at once', async () => {
+test('the files stay on a Transferred Task: its Customer still reads them, and the Customer of the new Task does not', async () => {
   const owner = await staffMember();
   const task = await openTask(owner);
   const customer = await customerOf(owner, task);
   await attach(customer, task);
   const [{ path }] = await attachments(customer, task);
+
+  const { data: id, error } = await transfer(owner, task);
+  assert.equal(error, null);
+  const next = await customerOf(owner, { id });
+
   assert.deepEqual(await fetchFile(customer, path), pdf);
-
-  const next = await customerOf(owner, task);
-
-  assert.equal(await fetchFile(customer, path), null);
-  assert.deepEqual(await attachments(customer, task), []);
-  assert.deepEqual(await fetchFile(next, path), pdf);
+  assert.deepEqual(await attachments(owner, { id }), []);
+  assert.equal(await fetchFile(next, path), null);
+  assert.deepEqual(await attachments(next, task), []);
 });
 
 test('the Owner deletes an attachment: it shows on the Timeline and the file is erased', async () => {

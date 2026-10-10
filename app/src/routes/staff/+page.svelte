@@ -4,6 +4,7 @@
   import Field from '@ui/lib/Field.svelte';
   import { t } from '@ui/i18n/index.svelte.js';
   import { auth, displayName } from '#lib/session.svelte.js';
+  import { FINAL } from '#lib/status.js';
   import { supabase } from '#lib/supabase.js';
 
   // Every Staff member may read this list; only a Task Master is offered the actions. The buttons
@@ -27,7 +28,7 @@
     if (error) problem = 'common.error';
     else people = data;
     // ponytail: counted here from one page of rows (1000); count in the database if that is passed.
-    const live = await supabase.from('tasks').select('owner_id').not('status', 'in', '(done,cancelled)');
+    const live = await supabase.from('tasks').select('owner_id').not('status', 'in', `(${FINAL})`);
     if (live.error) problem = 'common.error';
     owned = {};
     for (const { owner_id } of live.data ?? []) owned[owner_id] = (owned[owner_id] ?? 0) + 1;

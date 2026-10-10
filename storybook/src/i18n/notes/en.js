@@ -78,7 +78,7 @@ export default {
     title: 'Badge',
     purpose: 'Shows a status or a short count.',
     why: [
-      'Each Task status has a fixed tone, so it is recognised before it is read: slate for Open, blue for In progress, amber for Resolved, green for Done, red for Cancelled.',
+      'Each Task status has a fixed tone, so it is recognised before it is read: slate for Open, blue for In progress, amber for Resolved, green for Done, red for Cancelled, violet for Transferred.',
       'Amber for Resolved is deliberate. The work is proposed as finished but is still waiting for someone to confirm.',
     ],
     use: ['Pass `status` for a Task or Thread status. Pass `tone` and `label` for anything else.'],

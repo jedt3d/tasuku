@@ -4,7 +4,7 @@ export default {
   title: 'Components/Badge', parameters: { notes: 'badge' },
   component: Badge,
   argTypes: {
-    status: { control: 'select', options: ['open', 'in_progress', 'resolved', 'done', 'cancelled', 'settled'] },
+    status: { control: 'select', options: ['open', 'in_progress', 'resolved', 'done', 'cancelled', 'transferred', 'settled'] },
     tone: { control: 'select', options: ['slate', 'blue', 'amber', 'green', 'red', 'violet'] },
   },
 };
@@ -14,4 +14,5 @@ export const InProgress = { args: { status: 'in_progress' } };
 export const Resolved = { args: { status: 'resolved' } };
 export const Done = { args: { status: 'done' } };
 export const Cancelled = { args: { status: 'cancelled' } };
+export const Transferred = { args: { status: 'transferred' } };
 export const CustomTone = { args: { tone: 'amber', label: '2 awaiting confirmation', caps: true } };

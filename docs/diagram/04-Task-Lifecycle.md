@@ -1,6 +1,6 @@
 # 04-Task-Lifecycle
 
-Source: Spec #1 (GitHub issue) transition table, CONTEXT.md. Colour key: grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned.
+Source: Spec #1 (GitHub issue) transition table, CONTEXT.md. Colour key: grey = not started, blue = being worked, yellow = waiting for the Customer, green = finished, light red = abandoned, violet = carried on in a new Task.
 
 ```mermaid
 ---
@@ -90,15 +90,19 @@ stateDiagram-v2
   InProgress --> Done : Customer
   Open --> Cancelled : Customer, Owner or Task Master
   InProgress --> Cancelled : Customer, Owner or Task Master
+  Open --> Transferred : Owner or Task Master
+  InProgress --> Transferred : Owner or Task Master
   Done --> [*]
   Cancelled --> [*]
-  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. While Resolved the Customer is not replaced or taken off
+  Transferred --> [*]
+  note right of Resolved : With no Customer on the Task the Owner marks it Done alone, from any state before Done. The Customer is never replaced or taken off. Transferring opens a new Task that carries the work on, without a Customer. A Resolved Task takes no Customer and is Reopened before it is transferred
   note right of Open : A Customer comment leaves the Task Open
   class Open grey
   class InProgress blue
   class Resolved yellow
   class Done green
   class Cancelled lred
+  class Transferred violet
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
   classDef lblue   fill:#ddeefc,stroke:#4ba1f1,stroke-width:2px,color:#1d1d1d
@@ -115,3 +119,4 @@ stateDiagram-v2
 - Done and Cancelled are terminal (spec #1 story 70). Cancelling a Resolved Task is not drawn: the spec table allows Cancelled only from Open and In progress.
 - Who may Reopen: CONTEXT.md does not say, spec #1 says Customer or Task Master, and v1-plan.md says Customer only. As built in #8 it is the Customer or a Task Master, as the spec says (confirmed by the user, 7 Oct 2026); issue #8 names only the Customer.
 - Automatic closure (#11) is built. The time a Task closes by itself is fixed when it becomes Resolved (`tasks.closes_at`), from the closure period (48 h) a Task Master sets on the Staff page; Reopen and Resolved again starts over, and a change of the period applies to Tasks Resolved from then on. A job checks every 15 minutes. The Customer is reminded once (24 h before, also a setting) and told once the Task has closed. Decided by the user on 11 Oct 2026: a Resolved Task with no Customer closes by itself too, and the Customer of a Resolved Task is not replaced or taken off until it is Reopened. An Owner who is not a Task Master cannot Reopen, so asks one (listed in PR #38 for the user to confirm).
+- Transferred (#39, not in spec #1, asked for by the user on 11 Oct 2026) is built as a third final status. The Owner or a Task Master transfers an Open or In progress Task (`transfer_task`): one action opens a new Task with the same details, Owner and Collaborators, no Customer and status Open, and makes the old one Transferred. The new Task is not drawn as an arrow: it starts at Open like any Task. This replaces what the automatic closure item above says about replacing or taking off a Customer: `set_customer` only fills an empty place and `remove_customer` is gone. Spec #1 story 70 names only Done and Cancelled as terminal.
