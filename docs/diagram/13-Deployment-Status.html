@@ -102,14 +102,15 @@ flowchart LR
   cf["Cloudflare Worker<br/>and Custom Domain"]:::green
   auth["Supabase Auth<br/>URLs set"]:::green
   decided["Decided: sign-up<br/>is closed (ADR 0003)"]:::green
-  schema["Schema and RLS<br/>migrations from #2 and #3"]:::blue
-  app["Build the app and<br/>deploy to the Worker"]:::blue
-  seed["Seed the first Task Master<br/>sign in with a magic link"]:::blue
-  invite["Deploy the two<br/>invite functions"]:::blue
-  signup["Turn off<br/>new sign-ups"]:::blue
+  schema["Schema and RLS<br/>12 migrations applied"]:::green
+  app["Build the app and<br/>deploy to the Worker"]:::green
+  seed["Seed the first Task Master<br/>sign in with a magic link"]:::green
+  invite["Deploy the two<br/>invite functions"]:::green
+  signup["Turn off<br/>new sign-ups"]:::green
   session["Sessions time-boxed to 7 days<br/>needs the Pro plan"]:::blue
   mailgun["Mailgun SMTP"]:::yellow
-  emails["Deploy send-emails<br/>its secrets and Vault"]:::blue
+  emails["Deploy<br/>send-emails"]:::green
+  secrets["send-emails secrets<br/>and the two Vault secrets"]:::blue
   cf --> app
   auth --> seed
   schema --> seed
@@ -119,8 +120,9 @@ flowchart LR
   invite --> signup
   auth --> session
   seed -.->|"before real use"| mailgun
-  schema --> emails
-  mailgun -.->|"API key"| emails
+  emails --> schema
+  emails --> secrets
+  mailgun -.->|"API key"| secrets
 
 
   classDef blue    fill:#dce1f8,stroke:#4465e9,stroke-width:2px,color:#1d1d1d
