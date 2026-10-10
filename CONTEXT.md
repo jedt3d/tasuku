@@ -26,6 +26,14 @@ _Avoid_: Main branch, feed, history
 An internal sub-task split off from a point on the Timeline, covering one topic and having its own responsible Staff member. Customers never see Threads.
 _Avoid_: Branch, subtask, internal note, side conversation
 
+**Carry on**:
+Said of a Task that takes over from one earlier Task: a problem that came back, or a Task that was transferred. A Task carries on from at most one Task, and any number of Tasks can carry one on. It is a detail of the new Task, set when it is opened and changed by whoever writes on it, except after a transfer, where it is fixed.
+_Avoid_: Related (that has no direction), parent, child, follow-up, refers to
+
+**Related Tasks**:
+Two Tasks whose content is related, linked so a subject can be followed from one to the other. The link has no direction and shows on both Tasks; a Task has any number of them. Every Staff member adds and removes one, on a Task in any status and whether they are on it or not; it changes nothing of either Task or its Timeline. Customers never see them.
+_Avoid_: Linked Tasks, duplicate, dependency, blocks, carries on (that is one Task taking over from another)
+
 ### Task status
 
 **Open**:
@@ -58,7 +66,7 @@ A Task whose work goes on in a new Task, because it must continue with another C
 _Avoid_: Moved, replaced, closed, handed over
 
 **Transfer**:
-To open, in one action, a new Task that carries an Open or In progress Task on, and make the old one Transferred. The Owner or a Task Master does it. The new Task has the same details, Owner and Collaborators, no Customer and a Timeline of its own, and refers to the old one.
+To open, in one action, a new Task that carries an Open or In progress Task on, and make the old one Transferred. The Owner or a Task Master does it. The new Task has the same details, Owner and Collaborators, no Customer and a Timeline of its own, takes the Related Tasks of the old one, and carries on from it for good.
 _Avoid_: Replace the Customer, clone, hand over (that is a change of Owner)
 
 ### People

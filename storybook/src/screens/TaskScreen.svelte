@@ -117,8 +117,8 @@
         <Field label={t('task.dueDate')} value={due} icon="calendar" />
         <section>
           <h3>
-            {t('task.related')}
-            {#if canWrite}<button class="act" aria-label={t('task.newRelated')}><Icon name="plus" size={14} />{t('common.newTask')}</button>{/if}
+            {t('task.carriesOnFrom')}
+            {#if canWrite}<button class="act" aria-label={t('task.newCarryOn')}><Icon name="plus" size={14} />{t('common.newTask')}</button>{/if}
           </h3>
           <a class="ref" href="#ref"><Icon name="link" size={15} />{task.refersTo}</a>
         </section>

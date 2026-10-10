@@ -15,8 +15,12 @@
 
   // Row Level Security leaves out of an answer what the reader may not read (ADR 0002): to a
   // Customer the Owner, the Organization and every Staff member come back as null.
+  // The Task itself is embedded in both directions: `earlier` is the one it carries on from,
+  // `carriedOn` the Tasks that carry it on.
   const columns =
-    'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id)';
+    'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id), earlier:earlier_task_id(id, title, status), carriedOn:tasks!earlier_task_id(id, title, status)';
+  // One row per pair of Related Tasks, the lower number first: this Task is `a` or `b`.
+  const linkColumns = 'a:tasks!task_id(id, title, status), b:tasks!related_task_id(id, title, status)';
 
   const entryColumns =
     'id, kind, body, status, created_at, edited_at, deleted_at, author_id, subject_id, customer_id, next_task_id, author:staff!author_id(name, email), subject:staff!subject_id(name, email), customer:customers(email), attachments(id, path, name, mime_type, size, deleted_at)';
@@ -28,6 +32,9 @@
   let collaborators = $state([]); // { staff_id, staff: { name, email } }, in the order they were added
   let staff = $state([]); // every Staff member who has not been removed: who can be added
   let adding = $state(''); // the user id chosen in "Add Collaborator"
+  let related = $state([]); // the Related Tasks, by number: { id, title, status }
+  let linking = $state(''); // the number being typed in "Related Tasks"
+  let transferredHere = $state(false); // opened by a transfer: the Task it carries on from is fixed
   let newOwner = $state(''); // the user id a Task Master has chosen as the new Owner
   let organizations = $state([]); // every Organization, by name
   let known = $state([]); // the Customer emails used before, offered again
@@ -52,8 +59,13 @@
   const canAddCustomer = $derived(canManage && !task?.customer_id && task?.status !== 'resolved');
   // Open or In progress: the only statuses a Task is cancelled or transferred from.
   const beforeResolved = $derived(task?.status === 'open' || task?.status === 'in_progress');
-  // The Task that carries a Transferred one on, from the event that says so.
-  const continuedIn = $derived(entries.find((entry) => entry.next_task_id)?.next_task_id);
+  const byNumber = (a, b) => a.id - b.id;
+  const carriedOn = $derived([...(task?.carriedOn ?? [])].sort(byNumber));
+  // A number that can be linked: not this Task, and not one already listed.
+  const linkable = $derived(
+    Number.isInteger(Number(linking)) && Number(linking) > 0 && Number(linking) !== task?.id &&
+      !related.some((other) => other.id === Number(linking)),
+  );
   const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
   const canWrite = $derived(canManage || (collaboratorIds.includes(auth.userId) && !closed));
   // The Customer comments, and changes nothing else.
@@ -168,7 +180,10 @@
     draft = null;
     entries = [];
     collaborators = [];
+    related = [];
+    transferredHere = false;
     adding = '';
+    linking = '';
     newOwner = '';
     customerEmail = '';
     text = '';
@@ -183,7 +198,7 @@
   // progress, and adding a Collaborator or a Customer writes an event. The lists a Staff member
   // chooses from come back empty to a Customer, who is given the names of the Staff instead.
   async function refresh(id) {
-    const [found, timeline, people, everyone, labels, emails, named] = await Promise.all([
+    const [found, timeline, people, everyone, labels, emails, named, links, origin] = await Promise.all([
       supabase.from('tasks').select(columns).eq('id', id).maybeSingle(),
       supabase.from('timeline_entries').select(entryColumns).eq('task_id', id).order('created_at').order('id'),
       supabase.from('task_collaborators').select('staff_id, staff:staff(name, email)').eq('task_id', id).order('added_at'),
@@ -191,15 +206,20 @@
       supabase.from('organizations').select('id, name').order('name'),
       supabase.from('customers').select('email').order('email'),
       auth.staff ? { data: [] } : supabase.rpc('staff_on_task', { task: id }),
+      supabase.from('task_links').select(linkColumns).or(`task_id.eq.${id},related_task_id.eq.${id}`),
+      supabase.from('timeline_entries').select('id').eq('next_task_id', id),
     ]);
     if (id !== page.params.id) return; // the reader has moved on to another Task
     const error =
-      found.error ?? timeline.error ?? people.error ?? everyone.error ?? labels.error ?? emails.error ?? named.error;
+      found.error ?? timeline.error ?? people.error ?? everyone.error ?? labels.error ?? emails.error ?? named.error ??
+      links.error ?? origin.error;
     problem = error ? 'common.error' : '';
     missing = !error && !found.data;
     task = found.data;
     entries = timeline.data ?? [];
     collaborators = people.data ?? [];
+    related = (links.data ?? []).map(({ a, b }) => (a.id === found.data?.id ? b : a)).sort(byNumber);
+    transferredHere = Boolean(origin.data?.length);
     staff = everyone.data ?? [];
     organizations = labels.data ?? [];
     known = emails.data ?? [];
@@ -218,6 +238,9 @@
 
   async function save(event) {
     event.preventDefault();
+    // The earlier Task shows this one as carrying it on: say so before that is taken away.
+    const earlier = task.earlier_task_id;
+    if (earlier && (Number(draft.earlier_task_id) || null) !== earlier && !confirm(t('task.confirmCarriesOnFrom', { task: `#${earlier}` }))) return;
     busy = true;
     const { data, error } = await supabase
       .from('tasks')
@@ -348,6 +371,34 @@
     if (error || !data.length) problem = 'common.error';
   }
 
+  // Any Staff member links any Task, in any status (#41): these two do not ask `canWrite`.
+  // The database puts the pair in order and signs it. Linking a pair someone else has just linked
+  // is no problem to report: the list shows it.
+  async function addLink(event) {
+    event.preventDefault();
+    if (busy || !linkable) return;
+    busy = true;
+    const { error } = await supabase.from('task_links').insert({ task_id: task.id, related_task_id: Number(linking) });
+    busy = false;
+    if (error && error.code !== '23505') return (problem = error.code === '23503' ? 'task.notFound' : 'common.error');
+    linking = '';
+    await refresh(page.params.id);
+  }
+
+  async function removeLink(other) {
+    if (busy) return;
+    busy = true;
+    const { error } = await supabase
+      .from('task_links')
+      .delete()
+      .eq('task_id', Math.min(task.id, other))
+      .eq('related_task_id', Math.max(task.id, other));
+    busy = false;
+    // A link someone else has just taken away deletes no row: the list shows it gone.
+    await refresh(page.params.id);
+    if (error) problem = 'common.error';
+  }
+
   // Through the invite function: an email Tasuku has never seen needs an account first (ADR 0003).
   async function setCustomer(event) {
     event.preventDefault();
@@ -441,6 +492,11 @@
   });
 </script>
 
+{#snippet reference(other)}
+  <a href="/tasks/{other.id}">#{other.id} {other.title}</a>
+  <Badge status={other.status} />
+{/snippet}
+
 <main>
   <section class="card">
     <a href="/">← {t(auth.staff ? 'nav.overview' : 'customer.myTasks')}</a>
@@ -464,13 +520,15 @@
             {/each}
           </select>
         </label>
-        <Field
-          label={t('task.related')}
-          type="number"
-          placeholder="#"
-          action={t('common.optional')}
-          bind:value={draft.earlier_task_id}
-        />
+        {#if !transferredHere}
+          <Field
+            label={t('task.carriesOnFrom')}
+            type="number"
+            placeholder="#"
+            action={t('common.optional')}
+            bind:value={draft.earlier_task_id}
+          />
+        {/if}
         <div class="actions">
           <Button type="button" label={t('common.cancel')} onclick={() => (draft = null)} />
           <Button type="submit" variant="primary" label={t('common.save')} disabled={busy || !complete} />
@@ -590,23 +648,46 @@
         </dd>
         {/if}
         {#if task.earlier_task_id}
-          <dt>{t('task.related')}</dt>
+          <dt>{t('task.carriesOnFrom')}</dt>
           <dd>
-            {#if auth.staff}
-              <a href="/tasks/{task.earlier_task_id}">#{task.earlier_task_id}</a>
+            {#if auth.staff && task.earlier}
+              {@render reference(task.earlier)}
             {:else}
               #{task.earlier_task_id}
             {/if}
           </dd>
         {/if}
-        {#if continuedIn}
-          <dt>{t('task.continuedIn')}</dt>
+        {#if auth.staff}
+          {#if carriedOn.length}
+            <dt>{t('task.carriedOnIn')}</dt>
+            <dd>
+              <ul class="tasks">
+                {#each carriedOn as other (other.id)}
+                  <li>{@render reference(other)}</li>
+                {/each}
+              </ul>
+            </dd>
+          {/if}
+          <dt>{t('task.relatedTasks')}</dt>
           <dd>
-            {#if auth.staff}
-              <a href="/tasks/{continuedIn}">#{continuedIn}</a>
-            {:else}
-              #{continuedIn}
-            {/if}
+            <ul class="tasks">
+              {#each related as other (other.id)}
+                <li>
+                  {@render reference(other)}
+                  <button
+                    class="x"
+                    aria-label={t('task.removeRelated', { task: `#${other.id}` })}
+                    onclick={() => removeLink(other.id)}><Icon name="x" size={14} /></button
+                  >
+                </li>
+              {:else}
+                <li class="none">{t('task.noRelated')}</li>
+              {/each}
+            </ul>
+            <form class="add" onsubmit={addLink}>
+              <input type="number" min="1" placeholder="#" aria-label={t('task.addRelated')} bind:value={linking} />
+              <Button type="submit" size="sm" icon="plus" label={t('common.add')} disabled={busy || !linkable} />
+            </form>
           </dd>
         {/if}
         {#if task.due_date}
@@ -620,7 +701,7 @@
       {/if}
       {#if moves.length || auth.staff}
         <div class="actions">
-          {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newRelated')}</a>{/if}
+          {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newCarryOn')}</a>{/if}
           {#if canManage && beforeResolved}
             <Button size="sm" label={t('task.transfer')} disabled={busy} onclick={transfer} />
           {/if}
@@ -732,8 +813,17 @@
     padding: 0;
     list-style: none;
   }
+  .tasks {
+    display: grid;
+    gap: var(--s-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tasks li,
   .people li {
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--s-1);
   }
