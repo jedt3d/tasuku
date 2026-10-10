@@ -189,7 +189,7 @@
       <small>{t('new.orgHint')}</small>
     </label>
     <Field
-      label={t('task.related')}
+      label={t('task.carriesOnFrom')}
       type="number"
       placeholder="#"
       action={t('common.optional')}

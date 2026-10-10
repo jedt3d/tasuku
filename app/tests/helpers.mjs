@@ -106,6 +106,31 @@ export const reassign = async (client, task, staff) =>
 // that carries it on.
 export const transfer = (client, task) => client.rpc('transfer_task', { task: task.id });
 
+// Links `task` and `other` as Related Tasks, acting as `client`. Resolves to the API's answer,
+// error included.
+export const link = (client, task, other) =>
+  client.from('task_links').insert({ task_id: task.id, related_task_id: other.id }).select();
+
+// Takes the link between `task` and `other` away as `client`, whichever way round it was made.
+// Resolves to the API's answer: a removal the database refuses deletes no row and is no error.
+export const unlink = (client, task, other) =>
+  client
+    .from('task_links')
+    .delete()
+    .eq('task_id', Math.min(task.id, other.id))
+    .eq('related_task_id', Math.max(task.id, other.id))
+    .select();
+
+// The numbers of the Tasks related to `task`, as `client` reads them, lowest first.
+export async function related(client, task) {
+  const { data, error } = await client
+    .from('task_links')
+    .select('task_id, related_task_id')
+    .or(`task_id.eq.${task.id},related_task_id.eq.${task.id}`);
+  if (error) throw error;
+  return data.map((row) => (row.task_id === task.id ? row.related_task_id : row.task_id)).sort((a, b) => a - b);
+}
+
 // Runs automatic closure as if it were `hours` from now: the job is not open to anyone signed in,
 // and the status is still changed by the function under test. Every Resolved Task of the local
 // stack that is due by then is closed with it.
