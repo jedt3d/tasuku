@@ -42,6 +42,10 @@ _Avoid_: Request for review, pending close
 A Task whose closure is final: confirmed after Resolved, closed directly by the Customer, or closed by itself because a Resolved Task was not answered in time.
 _Avoid_: Closed, completed
 
+**Unfinished**:
+Said of a Task that is not Done or Cancelled: Open, In progress or Resolved. Only an unfinished Task is reassigned, and the Staff page counts the unfinished Tasks each Staff member owns.
+_Avoid_: Open (it is one status), live, active, pending
+
 **Reopen**:
 To send a Resolved Task back to In progress because the proposed closure was not accepted.
 _Avoid_: Reject

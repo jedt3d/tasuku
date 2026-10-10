@@ -1,24 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { write } from '../../supabase/functions/send-emails/emails/index.js';
 import {
-  addCollaborator, addCustomer, anonymous, close, comment, customerOf, emailsTo, move, openTask, reassign, settle,
-  signInAs, staffMember, taskMaster, uniqueEmail, userId,
+  addCollaborator, addCustomer, anonymous, close, collaborators, comment, customerOf, emailAbout, emailOf, emailsTo,
+  move, openTask, reassign, settle, signInAs, staffMember, taskMaster, uniqueEmail, userId,
 } from './helpers.mjs';
-
-const emailOf = async (client) => (await client.auth.getUser()).data.user.email;
 
 // `task` as `client` reads it now.
 async function read(client, task) {
   const { data, error } = await client.from('tasks').select('owner_id, status, closes_at').eq('id', task.id).single();
   if (error) throw error;
   return data;
-}
-
-async function collaborators(client, task) {
-  const { data, error } = await client.from('task_collaborators').select('staff_id').eq('task_id', task.id);
-  if (error) throw error;
-  return data.map((row) => row.staff_id);
 }
 
 // The events on the Timeline of `task` after it was opened, oldest first.
@@ -38,15 +29,6 @@ const removeFromStaff = async (master, staff) => {
   const { error } = await master.rpc('remove_staff', { staff_id: await userId(staff) });
   if (error) throw error;
 };
-
-// The one email of `kind` about `task` among `mails`, as the catalogue words it.
-function emailAbout(mails, kind, task, values) {
-  const expected = write('en', kind, {
-    id: task.id, title: task.title, link: `http://localhost:5173/tasks/${task.id}`, ...values,
-  });
-  const found = mails.filter((mail) => mail.Subject === expected.subject && mail.Text.trim() === expected.text);
-  assert.equal(found.length, 1, `one "${kind}" email`);
-}
 
 test('a Task Master gives a Task to another Staff member; the previous Owner stays as a Collaborator', async () => {
   const master = await taskMaster();
@@ -242,13 +224,13 @@ test('the new Owner and the previous Owner each get an email; the Task Master ge
 
   assert.equal((await reassign(master, task, next)).error, null);
 
-  const actor = await emailOf(master);
-  emailAbout(await emailsTo(await emailOf(next), 1), 'assigned', task, { actor });
-  emailAbout(await emailsTo(await emailOf(owner), 1), 'unassigned', task, { actor, owner: await emailOf(next) });
+  const [actor, toNext, toOwner] = await Promise.all([master, next, owner].map(emailOf));
+  emailAbout(await emailsTo(toNext, 1), 'assigned', task, { to: toNext, actor });
+  emailAbout(await emailsTo(toOwner, 1), 'unassigned', task, { to: toOwner, actor, owner: toNext });
   await settle();
   assert.deepEqual(await emailsTo(actor), []);
-  assert.equal((await emailsTo(await emailOf(next))).length, 1);
-  assert.equal((await emailsTo(await emailOf(owner))).length, 1);
+  assert.equal((await emailsTo(toNext)).length, 1);
+  assert.equal((await emailsTo(toOwner)).length, 1);
 });
 
 test('a Task Master who takes a Task gets no email, and a previous Owner removed from Staff gets none', async () => {
@@ -263,7 +245,8 @@ test('a Task Master who takes a Task gets no email, and a previous Owner removed
   assert.equal((await reassign(master, taken, master)).error, null);
 
   const actor = await emailOf(master);
-  emailAbout(await emailsTo(await emailOf(owner), 1), 'unassigned', taken, { actor, owner: actor });
+  const to = await emailOf(owner);
+  emailAbout(await emailsTo(to, 1), 'unassigned', taken, { to, actor, owner: actor });
   await settle();
   assert.deepEqual(await emailsTo(actor), []);
   assert.deepEqual(await emailsTo(await emailOf(gone)), []);

@@ -2,25 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { write } from '../../supabase/functions/send-emails/emails/index.js';
 import {
-  addCollaborator, addCustomer, anonymous, attach, comment, customerOf, emailsTo, env, move, openTask, runClosure,
+  addCollaborator, addCustomer, anonymous, attach, comment, customerOf, emailAbout, emailOf, emailsTo, env, move, openTask, runClosure,
   settle,
-  staffMember, taskMaster, uniqueEmail, userId,
+  staffMember, taskLink, taskMaster, uniqueEmail, userId,
 } from './helpers.mjs';
-
-const emailOf = async (client) => (await client.auth.getUser()).data.user.email;
-const link = (task) => `http://localhost:5173/tasks/${task.id}`;
-
-// The one email of `kind` about `task` among `mails`, checked for its recipient, its language
-// (the subject is the catalogue's) and its link. `actor` is how whoever did it must be named;
-// `hours` is how long the email says is left before the Task closes by itself.
-function emailAbout(mails, kind, task, { to, language = 'en', actor, hours }) {
-  const expected = write(language, kind, { id: task.id, title: task.title, actor, hours, link: link(task) });
-  const found = mails.filter((mail) => mail.Subject === expected.subject && mail.Text.trim() === expected.text);
-  assert.equal(found.length, 1, `one "${kind}" email in ${language}`);
-  assert.deepEqual(found[0].To.map((recipient) => recipient.Address), [to]);
-  assert.ok(found[0].Text.includes(link(task)));
-  return found[0];
-}
 
 const setLanguage = async (client, table, language) => {
   const { error } = await client.from(table).update({ language }).eq('user_id', await userId(client));
@@ -244,7 +229,7 @@ test('the link in an email works for a Customer who is not signed in: the magic 
   await addCustomer(owner, task, to);
   const [added] = await emailsTo(to, 1);
   const [address] = added.Text.match(/http\S+/);
-  assert.equal(address, link(task));
+  assert.equal(address, taskLink(task));
 
   // What the sign-in page does for someone who arrived at that address.
   const asked = await anonymous().auth.signInWithOtp({

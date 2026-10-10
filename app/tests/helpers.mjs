@@ -1,7 +1,9 @@
 // Test seam: the Supabase API of the local stack, called as a given user.
 // Run `npm run stack:up` first.
+import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { write } from '../../supabase/functions/send-emails/emails/index.js';
 import { localSupabase } from '../scripts/local-supabase.mjs';
 
 export const env = localSupabase();
@@ -44,6 +46,7 @@ export async function signInAs(email, { staff } = {}) {
 export const staffMember = () => signInAs(uniqueEmail('staff'), { staff: {} });
 export const taskMaster = () => signInAs(uniqueEmail('tm'), { staff: { taskMaster: true } });
 export const userId = async (client) => (await client.auth.getUser()).data.user.id;
+export const emailOf = async (client) => (await client.auth.getUser()).data.user.email;
 
 // Opens a Task as `client` and returns it as that person reads it back.
 export async function openTask(client, fields = {}) {
@@ -64,6 +67,13 @@ export const comment = (client, task, body = 'On it.') =>
 // Resolves to the API's answer, error included.
 export const addCollaborator = async (client, task, staff) =>
   client.from('task_collaborators').insert({ task_id: task.id, staff_id: await userId(staff) }).select();
+
+// Who collaborates on `task`, as `client` reads it.
+export async function collaborators(client, task) {
+  const { data, error } = await client.from('task_collaborators').select('staff_id').eq('task_id', task.id);
+  if (error) throw error;
+  return data.map((row) => row.staff_id);
+}
 
 export const uniqueName = (name) => `${name} ${randomUUID().slice(0, 8)}`;
 
@@ -142,6 +152,22 @@ export async function emailsTo(email, count = 0) {
     }
     await settle(250);
   }
+}
+
+// Where an email sends its reader: the Task, in the app.
+export const taskLink = (task) => `http://localhost:5173/tasks/${task.id}`;
+
+// The one email of `kind` about `task` among `mails`, checked for its recipient, its language
+// (the subject is the catalogue's) and its link. `values` is what the text names besides the Task:
+// `actor` (whoever did it), `hours` (left before the Task closes by itself), `owner` (the new Owner).
+export function emailAbout(mails, kind, task, { to, language = 'en', ...values }) {
+  const link = taskLink(task);
+  const expected = write(language, kind, { id: task.id, title: task.title, link, ...values });
+  const found = mails.filter((mail) => mail.Subject === expected.subject && mail.Text.trim() === expected.text);
+  assert.equal(found.length, 1, `one "${kind}" email in ${language}`);
+  assert.deepEqual(found[0].To.map((recipient) => recipient.Address), [to]);
+  assert.ok(found[0].Text.includes(link));
+  return found[0];
 }
 
 export const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
