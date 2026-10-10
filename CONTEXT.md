@@ -42,6 +42,10 @@ _Avoid_: Request for review, pending close
 A Task whose closure is final: confirmed after Resolved, closed directly by the Customer, or closed by itself because a Resolved Task was not answered in time.
 _Avoid_: Closed, completed
 
+**Unfinished**:
+Said of a Task that is not Done or Cancelled: Open, In progress or Resolved. Only an unfinished Task is reassigned, and the Staff page counts the unfinished Tasks each Staff member owns.
+_Avoid_: Open (it is one status), live, active, pending
+
 **Reopen**:
 To send a Resolved Task back to In progress because the proposed closure was not accepted.
 _Avoid_: Reject
@@ -68,7 +72,7 @@ A Staff member who administers Tasuku: decides which emails are Staff, runs the 
 _Avoid_: Admin, manager
 
 **Owner**:
-The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. An Owner can hand ownership to another Staff member, who must accept it first; a Task Master can reassign it without acceptance.
+The one Staff member responsible for a Task; the only Staff member who may propose closing it. A Task with no Customer is closed by its Owner alone. An Owner can hand ownership to another Staff member, who must accept it first; a Task Master can reassign it without acceptance, on any Task that is not Done or Cancelled, to any Staff member except the Customer of that Task. The previous Owner stays on the Task as a Collaborator.
 _Avoid_: Assignee, primary, lead
 
 **Collaborator**:

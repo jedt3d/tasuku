@@ -5,6 +5,7 @@ import {
   admin,
   anonymous,
   close,
+  collaborators,
   comment,
   openTask,
   signInAs,
@@ -13,13 +14,6 @@ import {
   uniqueEmail,
   userId,
 } from './helpers.mjs';
-
-// Who collaborates on `task`, as `client` reads it.
-async function collaborators(client, task) {
-  const { data, error } = await client.from('task_collaborators').select('staff_id').eq('task_id', task.id);
-  if (error) throw error;
-  return data.map((row) => row.staff_id);
-}
 
 const removeCollaborator = async (client, task, staff) =>
   client.from('task_collaborators').delete().eq('task_id', task.id).eq('staff_id', await userId(staff)).select();

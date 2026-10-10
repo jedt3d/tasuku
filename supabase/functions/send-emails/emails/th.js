@@ -23,4 +23,12 @@ export default {
     subject: 'Customer ยกเลิก Task #{id}: {title}',
     body: '{actor} ยกเลิก Task #{id} "{title}" ไม่ต้องทำงานนี้ต่อแล้ว\n\nเปิด Task:\n{link}',
   },
+  assigned: {
+    subject: 'คุณเป็น Owner ของ Task #{id} แล้ว: {title}',
+    body: '{actor} ให้คุณเป็น Owner ของ Task #{id} "{title}"\n\nเปิด Task:\n{link}',
+  },
+  unassigned: {
+    subject: 'Task #{id} มี Owner ใหม่: {title}',
+    body: '{actor} มอบ Task #{id} "{title}" ให้ {owner} คุณยังอยู่ใน Task นี้ในฐานะ Collaborator\n\nเปิด Task:\n{link}',
+  },
 };

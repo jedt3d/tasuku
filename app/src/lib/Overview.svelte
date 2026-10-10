@@ -25,6 +25,10 @@
   let draft = $state({ ...blank, earlier_task_id: earlier });
   let busy = $state(false);
   let organizations = $state([]); // every Organization, by name
+  // The count next to a Staff member on the Staff page leads here with that person's id. It lists
+  // every Task they own, whatever its status; the count is of those not Done or Cancelled.
+  let owner = $state(page.url.searchParams.get('owner') ?? ''); // the Owner chosen in "All Tasks", or '' for any
+  let staff = $state([]); // every Staff member, removed ones included: their Tasks still name them
   let organization = $state(''); // the id chosen in "By Organization", or '' before one is chosen
   let naming = $state(''); // the name of the Organization being created
 
@@ -54,6 +58,7 @@
       .order('id', { ascending: false });
     if (status !== 'all') query = query.eq('status', status);
     if (view === 'organizations') query = query.eq('organization_id', organization);
+    if (view === 'all' && owner) query = query.eq('owner_id', owner);
     const { data, error } = await query;
     if (request !== asked) return; // a later choice of filter has already asked again
     problem = error ? 'common.error' : '';
@@ -99,6 +104,7 @@
   }
 
   loadOrganizations();
+  supabase.from('staff').select('user_id, name, email').order('email').then(({ data }) => (staff = data ?? []));
   $effect(() => {
     if (listed) refresh();
   });
@@ -120,6 +126,14 @@
   <section class="panel">
     <header>
       <h1>{views.find((v) => v.id === view).label}</h1>
+      {#if view === 'all'}
+        <select bind:value={owner} aria-label={t('task.owner')}>
+          <option value="">{t('filter.anyOwner')}</option>
+          {#each staff as person (person.user_id)}
+            <option value={person.user_id}>{displayName(person)}</option>
+          {/each}
+        </select>
+      {/if}
       {#if view === 'organizations'}
         <select bind:value={organization} aria-label={t('organization.choose')}>
           <option value="">{t('organization.choose')}</option>

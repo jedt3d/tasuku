@@ -14,6 +14,7 @@
   let problem = $state(''); // a message key, or '' when there is nothing to report
   let busy = $state(false);
   let unerased = $state([]); // for a Task Master: deleted files whose object is still in Storage
+  let owned = $state({}); // how many Tasks not Done or Cancelled each Staff member owns, by user id
   let periods = $state(null); // for a Task Master: the two periods of automatic closure
 
   const isTaskMaster = $derived(Boolean(auth.staff?.is_task_master));
@@ -25,6 +26,11 @@
       .order('email');
     if (error) problem = 'common.error';
     else people = data;
+    // ponytail: counted here from one page of rows (1000); count in the database if that is passed.
+    const live = await supabase.from('tasks').select('owner_id').not('status', 'in', '(done,cancelled)');
+    if (live.error) problem = 'common.error';
+    owned = {};
+    for (const { owner_id } of live.data ?? []) owned[owner_id] = (owned[owner_id] ?? 0) + 1;
     if (isTaskMaster) unerased = (await supabase.rpc('unerased_attachments')).data ?? [];
     if (isTaskMaster) periods = (await supabase.from('settings').select('closure_hours, reminder_hours').single()).data;
   }
@@ -93,7 +99,9 @@
     change(rpc('set_task_master', { staff_id: person.user_id, value }), person.user_id === auth.userId);
 
   function remove(person) {
-    if (!confirm(t('staff.confirmRemove', { email: person.email }))) return;
+    // Removing takes the access away at once; the Tasks stay theirs until a Task Master reassigns them.
+    const n = owned[person.user_id];
+    if (!confirm(t(n ? 'staff.confirmRemoveOwner' : 'staff.confirmRemove', { email: person.email, n }))) return;
     change(rpc('remove_staff', { staff_id: person.user_id }), person.user_id === auth.userId);
   }
 
@@ -161,6 +169,9 @@
               {#if person.user_id === auth.userId}<Badge tone="blue" label={t('staff.you')} dot={false} />{/if}
               {#if person.is_task_master}<Badge tone="green" label={t('staff.taskMaster')} />{/if}
               {#if person.removed_at}<Badge tone="red" label={t('staff.removed')} />{/if}
+              {#if owned[person.user_id]}
+                <a href="/?owner={person.user_id}">{t('staff.unfinished', { n: owned[person.user_id] })}</a>
+              {/if}
             </span>
             {#if isTaskMaster}
               <span class="actions">

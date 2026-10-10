@@ -54,6 +54,7 @@ Deno.serve(async (request) => {
       title: mail.title,
       actor: mail.actor,
       hours: mail.hours,
+      owner: mail.owner,
       link: `${env('SITE_URL')}/tasks/${mail.task_id}`,
     });
     try {

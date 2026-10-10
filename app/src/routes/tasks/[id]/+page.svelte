@@ -27,6 +27,7 @@
   let collaborators = $state([]); // { staff_id, staff: { name, email } }, in the order they were added
   let staff = $state([]); // every Staff member who has not been removed: who can be added
   let adding = $state(''); // the user id chosen in "Add Collaborator"
+  let newOwner = $state(''); // the user id a Task Master has chosen as the new Owner
   let organizations = $state([]); // every Organization, by name
   let known = $state([]); // the Customer emails used before, offered again
   let customerEmail = $state(''); // the email being typed in "Customer"
@@ -75,14 +76,24 @@
   // A Customer reads no other Customer's record: the one before them is "Customer".
   const customerName = (customer) => customer?.email ?? t('role.customer');
   const candidates = $derived(staff.filter((s) => s.user_id !== task?.owner_id && !collaboratorIds.includes(s.user_id)));
+  // Who a Task Master can give the Task to: not its Customer, who would have nobody to confirm to.
+  const possibleOwners = $derived(staff.filter((s) => s.user_id !== task?.owner_id && s.user_id !== task?.customer_id));
   const complete = $derived(Boolean(draft?.title.trim() && draft?.description.trim()));
 
   // The entries as the Timeline component draws them. A comment is labelled by what its author was
   // on the Task when they wrote it: the Timeline is a record, so removing a Collaborator later does
-  // not take the label off what they said. The events before the comment say who was on the Task.
+  // not take the label off what they said. The events before the comment say who was on the Task:
+  // its Owner is whoever opened it, until it changes hands and that Owner becomes a Collaborator.
   const shown = $derived.by(() => {
     const collaborating = new Set();
+    let owner = null;
     return entries.map((entry) => {
+      if (entry.kind === 'opened') owner = entry.author_id;
+      if (entry.kind === 'owner_changed') {
+        collaborating.add(owner);
+        collaborating.delete(entry.subject_id);
+        owner = entry.subject_id;
+      }
       if (entry.kind === 'collaborator_added') collaborating.add(entry.subject_id);
       if (entry.kind === 'collaborator_removed') collaborating.delete(entry.subject_id);
       const actor = entry.author_id
@@ -97,6 +108,10 @@
         const name = staffName(entry.subject_id, entry.subject);
         return { kind: 'event', icon: 'users', actor, key, vars: { name }, at: entry.created_at };
       }
+      if (entry.kind === 'owner_changed') {
+        const name = staffName(entry.subject_id, entry.subject);
+        return { kind: 'event', icon: 'users', actor, key: 'event.changedOwner', vars: { name }, at: entry.created_at };
+      }
       if (entry.kind === 'customer_added' || entry.kind === 'customer_removed') {
         const key = entry.kind === 'customer_added' ? 'event.addedCustomer' : 'event.removedCustomer';
         return { kind: 'event', icon: 'users', actor, key, vars: { name: customerName(entry.customer) }, at: entry.created_at };
@@ -110,7 +125,7 @@
         author: actor,
         role: !entry.author_id
           ? 'customer'
-          : entry.author_id === task?.owner_id
+          : entry.author_id === owner
             ? 'owner'
             : collaborating.has(entry.author_id)
               ? 'collaborator'
@@ -142,6 +157,7 @@
     entries = [];
     collaborators = [];
     adding = '';
+    newOwner = '';
     customerEmail = '';
     text = '';
     files = [];
@@ -291,6 +307,17 @@
     busy = false;
     if (error) return (problem = 'common.error');
     adding = '';
+    await refresh(page.params.id);
+  }
+
+  async function reassign(event) {
+    event.preventDefault();
+    if (busy || !newOwner) return;
+    busy = true;
+    const { error } = await supabase.rpc('reassign_task', { task: task.id, new_owner: newOwner });
+    busy = false;
+    if (error) return (problem = 'common.error');
+    newOwner = '';
     await refresh(page.params.id);
   }
 
@@ -448,7 +475,20 @@
       <h1>{task.title}</h1>
       <dl>
         <dt>{t('task.owner')}</dt>
-        <dd>{staffName(task.owner_id, task.owner)}</dd>
+        <dd>
+          {staffName(task.owner_id, task.owner)}
+          {#if isTaskMaster && !closed && possibleOwners.length}
+            <form class="add" onsubmit={reassign}>
+              <select bind:value={newOwner} aria-label={t('task.newOwner')}>
+                <option value="">{t('task.newOwner')}</option>
+                {#each possibleOwners as person (person.user_id)}
+                  <option value={person.user_id}>{displayName(person)}</option>
+                {/each}
+              </select>
+              <Button type="submit" size="sm" icon="users" label={t('task.reassign')} disabled={busy || !newOwner} />
+            </form>
+          {/if}
+        </dd>
         {#if auth.staff}
         <dt>{t('task.organization')}</dt>
         <dd>{task.organization?.name ?? t('new.orgNone')}</dd>

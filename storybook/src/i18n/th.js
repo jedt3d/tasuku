@@ -210,4 +210,11 @@ export default {
   'attach.wrongType': '{name} ไม่ใช่รูปหรือ PDF แนบไฟล์ชนิดอื่นไม่ได้',
   'attach.unerased': 'ไฟล์ที่ถูกลบ {n} รายการยังค้างอยู่ใน Storage เพราะการลบไม่เสร็จ ไม่มีใครเปิดไฟล์เหล่านี้ได้ Task:',
   'attach.eraseNow': 'ลบออกเดี๋ยวนี้',
+  // Reassigning the Owner (#12).
+  'event.changedOwner': 'ให้ {name} เป็น Owner',
+  'task.reassign': 'เปลี่ยน Owner',
+  'task.newOwner': 'Owner ใหม่',
+  'filter.anyOwner': 'ทุก Owner',
+  'staff.unfinished': 'Task ที่ยังไม่จบ: {n}',
+  'staff.confirmRemoveOwner': 'ถอด {email} ออกหรือไม่ เขาจะหมดสิทธิ์เข้าถึงทันที Task ที่ยังไม่จบซึ่งเขาเป็น Owner: {n} เปลี่ยน Owner ของ Task เหล่านั้นหลังจากนี้',
 };
