@@ -110,6 +110,8 @@ erDiagram
     string email UK
     string language
     bigint organization_id FK
+    datetime removed_at
+    uuid removed_by FK
     datetime created_at
   }
   ORGANIZATION {
