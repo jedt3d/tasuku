@@ -45,6 +45,8 @@ Deno.serve(async (request) => {
   }
   if (!added.error) return reply(200);
   if (added.error.code === '42501') return reply(403, 'not_allowed');
+  // Their access was taken away (#42): a Task Master gives it back first.
+  if (added.error.code === 'TSK03') return reply(403, 'customer_removed');
   console.error('set_customer:', added.error.message);
   return reply(500, 'failed');
 });
