@@ -119,6 +119,7 @@ create function public.transfer_task(task bigint) returns bigint
   declare
     t public.tasks;
     new_task bigint;
+    person uuid;
   begin
     -- The Task row is held before the caller is checked, as everywhere since #7.
     select * into t from public.tasks where id = task for update;
@@ -131,9 +132,14 @@ create function public.transfer_task(task bigint) returns bigint
       values (t.title, t.description, t.due_date, t.organization_id, t.owner_id, task)
       returning id into new_task;
     -- Each Collaborator is added as on any Task: an event, and the "added" email (#10), also for
-    -- one removed from Staff, who keeps their place (#6) and gets no email (`claim_emails`).
-    insert into public.task_collaborators (task_id, staff_id)
-      select new_task, c.staff_id from public.task_collaborators c where c.task_id = task order by c.added_at;
+    -- one removed from Staff, who keeps their place (#6) and gets no email (`claim_emails`). One
+    -- at a time, each with its own time, so they are listed in the order they had.
+    for person in
+      select c.staff_id from public.task_collaborators c where c.task_id = task order by c.added_at
+    loop
+      insert into public.task_collaborators (task_id, staff_id, added_at)
+        values (new_task, person, clock_timestamp());
+    end loop;
 
     update public.tasks set status = 'transferred' where id = task;
     insert into public.timeline_entries (task_id, kind, status, author_id, next_task_id)
@@ -154,8 +160,8 @@ create function public.transfer_task(task bigint) returns bigint
   $$;
 
 -- Fills the empty place of a Task, and nothing else: a Task that has a Customer is transferred
--- instead. It is refused before an account is looked for, so no account is made for an email that
--- would be refused anyway. Naming the Customer the Task already has changes nothing, as before.
+-- instead. That refusal comes before TSK02, so the invite function makes no account for an email
+-- that would be refused anyway. Naming the Customer the Task already has changes nothing, as before.
 create or replace function public.set_customer(task bigint, customer_email text) returns void
   language plpgsql security definer set search_path = ''
   as $$

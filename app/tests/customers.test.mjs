@@ -82,8 +82,12 @@ test('a Task that has a Customer takes no other: the first stays, and no account
   for (const client of [owner, master]) {
     assert.equal(status(await addCustomer(client, task, wanted)), 403);
   }
+  // Naming the Customer the Task has changes nothing for who may, and is refused to anyone else.
+  const current = (await first.auth.getUser()).data.user.email;
+  const other = await staffMember();
+  assert.equal((await other.rpc('set_customer', { task: task.id, customer_email: current })).error?.code, '42501');
 
-  assert.equal(await customerEmail(owner, task), (await first.auth.getUser()).data.user.email);
+  assert.equal(await customerEmail(owner, task), current);
   assert.deepEqual(await tasksOf(first), [task.id]);
   assert.equal((await comment(first, task, 'Still here.')).error, null);
   const sent = await anonymous().auth.signInWithOtp({ email: wanted, options: { shouldCreateUser: false } });

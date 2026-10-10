@@ -50,7 +50,8 @@
   // A Customer is added to a Task that has none, and never replaced (#39). A Resolved Task is
   // Reopened first.
   const canAddCustomer = $derived(canManage && !task?.customer_id && task?.status !== 'resolved');
-  const live = $derived(task?.status === 'open' || task?.status === 'in_progress');
+  // Open or In progress: the only statuses a Task is cancelled or transferred from.
+  const beforeResolved = $derived(task?.status === 'open' || task?.status === 'in_progress');
   // The Task that carries a Transferred one on, from the event that says so.
   const continuedIn = $derived(entries.find((entry) => entry.next_task_id)?.next_task_id);
   const collaboratorIds = $derived(collaborators.map((c) => c.staff_id));
@@ -72,7 +73,7 @@
         variant: status === 'resolved' ? 'primary' : 'secondary',
       },
       status === 'resolved' && (asCustomer || (canManage && isTaskMaster)) && { action: 'reopen', label: 'task.reopen' },
-      live && (asCustomer || canManage) && { action: 'cancel', label: asCustomer ? 'customer.cancel' : 'task.cancel' },
+      beforeResolved && (asCustomer || canManage) && { action: 'cancel', label: asCustomer ? 'customer.cancel' : 'task.cancel' },
     ].filter(Boolean);
   });
   // A Customer reads no Staff record, only names; a Staff member who has set no name is "PSP" to them.
@@ -111,8 +112,8 @@
         return { kind: 'event', icon: 'plus', actor, key: entry.subject_id ? 'event.openedFor' : 'event.opened', vars, at: entry.created_at };
       }
       if (entry.kind === 'moved') {
-        const vars = { task: `#${entry.next_task_id}` };
-        return { kind: 'event', actor, key: entry.next_task_id ? 'event.continuedIn' : 'event.movedTo', vars, status: entry.status, at: entry.created_at };
+        const next = entry.next_task_id;
+        return { kind: 'event', actor, key: next ? 'event.continuedIn' : 'event.movedTo', vars: next && { task: `#${next}` }, status: entry.status, at: entry.created_at };
       }
       if (entry.kind === 'collaborator_added' || entry.kind === 'collaborator_removed') {
         const key = entry.kind === 'collaborator_added' ? 'event.addedCollaborator' : 'event.removedCollaborator';
@@ -553,7 +554,7 @@
               />
             </form>
             <small>{t('task.customerHint')}</small>
-          {:else if canManage && live && task.customer}
+          {:else if canManage && beforeResolved && task.customer}
             <small>{t('task.customerFixed')}</small>
           {/if}
         </dd>
@@ -620,7 +621,7 @@
       {#if moves.length || auth.staff}
         <div class="actions">
           {#if auth.staff}<a href="/?earlier={task.id}">{t('task.newRelated')}</a>{/if}
-          {#if canManage && live}
+          {#if canManage && beforeResolved}
             <Button size="sm" label={t('task.transfer')} disabled={busy} onclick={transfer} />
           {/if}
           {#each moves as { action, label, variant } (action)}

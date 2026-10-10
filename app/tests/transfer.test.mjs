@@ -35,11 +35,13 @@ async function transferred(client, task) {
 
 test('the Owner transfers a Task: a new Task carries it on with the same details, Owner and Collaborators, and no Customer', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const [first, second] = [await userId(await staffMember()), await userId(await staffMember())];
   const { data: organization } = await createOrganization(owner);
   const task = await openTask(owner, { due_date: '2027-01-31' });
   await owner.from('tasks').update({ organization_id: organization.id }).eq('id', task.id);
-  await addCollaborator(owner, task, helper);
+  for (const staff_id of [second, first]) {
+    assert.equal((await owner.from('task_collaborators').insert({ task_id: task.id, staff_id })).error, null);
+  }
   await customerOf(owner, task);
   assert.equal((await comment(owner, task)).error, null); // In progress
 
@@ -57,11 +59,14 @@ test('the Owner transfers a Task: a new Task carries it on with the same details
     earlier_task_id: task.id,
     status: 'open',
   });
-  assert.deepEqual(await collaborators(owner, { id: next }), [await userId(helper)]);
+  // The Collaborators are listed in the order they were added, as on the old Task.
+  const listed = await owner.from('task_collaborators').select('staff_id').eq('task_id', next).order('added_at');
+  assert.deepEqual(listed.data.map((row) => row.staff_id), [second, first]);
   // Nothing of the old Timeline comes along: the new one says who opened it and who is on it.
   assert.deepEqual(await timeline(owner, next), [
     { kind: 'opened', status: null, author_id: await userId(owner), subject_id: null, next_task_id: null },
-    { kind: 'collaborator_added', status: null, author_id: await userId(owner), subject_id: await userId(helper), next_task_id: null },
+    { kind: 'collaborator_added', status: null, author_id: await userId(owner), subject_id: second, next_task_id: null },
+    { kind: 'collaborator_added', status: null, author_id: await userId(owner), subject_id: first, next_task_id: null },
   ]);
   assert.equal((await read(owner, task.id)).status, 'transferred');
   assert.deepEqual((await timeline(owner, task.id)).at(-1), {
@@ -133,7 +138,8 @@ test('a Transferred Task takes no comment, file or change', async () => {
   const { data: said } = await comment(customer, task, 'Please hurry.');
   await transferred(owner, task);
 
-  for (const client of [owner, master, collaborator, customer]) {
+  const others = [await staffMember(), await signInAs(uniqueEmail('stranger')), anonymous()];
+  for (const client of [owner, master, collaborator, customer, ...others]) {
     assert.equal((await comment(client, task)).error?.code, '42501');
     assert.notEqual((await upload(client, task)).error, null);
     assert.deepEqual((await client.from('tasks').update({ title: 'Changed' }).eq('id', task.id).select()).data ?? [], []);
@@ -152,6 +158,8 @@ test('a Transferred Task takes no comment, file or change', async () => {
   const reworded = await customer.from('timeline_entries').update({ body: 'Never mind.' }).eq('id', said.id).select();
   assert.deepEqual(reworded.data, []);
   assert.equal((await read(owner, task.id)).title, task.title);
+  // As on a Done or Cancelled Task, a Task Master still deletes what must not stay (#5).
+  assert.equal((await master.rpc('delete_comment', { entry_id: said.id })).error, null);
 });
 
 test('the Customer of the old Task reads it as before, with the number of the new Task, and does not read the new one', async () => {
@@ -184,35 +192,38 @@ test('a Collaborator who was removed from Staff keeps their place on the new Tas
 test('when a Task Master transfers a Task its Owner and Collaborators get an email about the new Task; the Customer of the old one gets none', async () => {
   const master = await taskMaster();
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
+  await addCollaborator(owner, task, collaborator);
+  await addCollaborator(owner, task, master);
   const customer = await customerOf(owner, task);
-  const [toOwner, toHelper, toCustomer, actor] = await Promise.all([owner, helper, customer, master].map(emailOf));
-  await Promise.all([toHelper, toCustomer].map((to) => emailsTo(to, 1))); // added to the old Task
+  const [toOwner, toCollaborator, toCustomer, actor] = await Promise.all([owner, collaborator, customer, master].map(emailOf));
+  await Promise.all([toCollaborator, toCustomer, actor].map((to) => emailsTo(to, 1))); // added to the old Task
 
   const next = await transferred(master, task);
 
   emailAbout(await emailsTo(toOwner, 1), 'transferred', next, { to: toOwner, actor });
-  emailAbout(await emailsTo(toHelper, 2), 'added', next, { to: toHelper, actor });
+  emailAbout(await emailsTo(toCollaborator, 2), 'added', next, { to: toCollaborator, actor });
   await settle();
   assert.equal((await emailsTo(toOwner)).length, 1);
   assert.equal((await emailsTo(toCustomer)).length, 1);
-  assert.equal((await emailsTo(actor)).length, 0);
+  // The Task Master follows as a Collaborator, and is not told of what they did themselves.
+  assert.deepEqual((await collaborators(master, next)).sort(), [await userId(collaborator), await userId(master)].sort());
+  assert.equal((await emailsTo(actor)).length, 1);
 });
 
 test('an Owner who transfers their own Task gets no email, and a Customer added to the new Task gets the usual one', async () => {
   const owner = await staffMember();
-  const helper = await staffMember();
+  const collaborator = await staffMember();
   const task = await openTask(owner);
-  await addCollaborator(owner, task, helper);
-  const [toOwner, toHelper, toCustomer] = [await emailOf(owner), await emailOf(helper), uniqueEmail('customer')];
-  await emailsTo(toHelper, 1);
+  await addCollaborator(owner, task, collaborator);
+  const [toOwner, toCollaborator, toCustomer] = [await emailOf(owner), await emailOf(collaborator), uniqueEmail('customer')];
+  await emailsTo(toCollaborator, 1);
 
   const next = await transferred(owner, task);
   assert.equal((await addCustomer(owner, next, toCustomer)).error, null);
 
-  emailAbout(await emailsTo(toHelper, 2), 'added', next, { to: toHelper, actor: toOwner });
+  emailAbout(await emailsTo(toCollaborator, 2), 'added', next, { to: toCollaborator, actor: toOwner });
   emailAbout(await emailsTo(toCustomer, 1), 'added', next, { to: toCustomer, actor: 'PSP' });
   await settle();
   assert.equal((await emailsTo(toOwner)).length, 0);
