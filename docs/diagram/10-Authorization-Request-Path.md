@@ -87,7 +87,7 @@ sequenceDiagram
   rect rgb(220, 225, 248)
     App->>API: read the Timeline of a Task
     API->>DB: query as the signed-in user
-    alt Customer on the Task
+    alt Customer on the Task, not removed
       DB-->>App: comments and events, never a Thread
     else Staff
       DB-->>App: the whole Task
@@ -118,3 +118,4 @@ sequenceDiagram
 - The third block is built (#8): `resolve_task`, `complete_task` (Done), `reopen_task` and `cancel_task`. Each holds the Task row, checks the caller and the current status, changes the status and adds the Timeline event; every refusal is the same error. One status change has no function for the app to call: the first Staff comment on an Open Task moves it to In progress (#5). Automatic closure after 48 h is not built.
 - Attachment files (#9) are not on this path: they sit in a private Storage bucket, with Row Level Security policies on `storage.objects` that call the same functions as the tables do, and open through a signed link that lives 60 seconds. A separate diagram would cover them.
 - ADR 0002 requires the policies to be tested as a Customer, a non-member Staff, a Collaborator, an Owner and a Task Master; 11 shows what each of them may do.
+- Since #42 "Customer on the Task" means a Customer whose access was not taken away: `private.is_customer()` is the one place that says so, as `private.is_staff()` is for Staff. A removed Customer gets no rows, like anyone else.

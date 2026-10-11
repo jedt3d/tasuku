@@ -107,7 +107,7 @@ sequenceDiagram
   rect rgb(220, 225, 248)
     App->>API: read the Timeline of a Task
     API->>DB: query as the signed-in user
-    alt Customer on the Task
+    alt Customer on the Task, not removed
       DB-->>App: comments and events, never a Thread
     else Staff
       DB-->>App: the whole Task
