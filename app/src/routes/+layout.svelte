@@ -10,7 +10,8 @@
   let { children } = $props();
 
   // Only the pages that exist are in the navigation.
-  const links = { home: '/', overview: '/', staff: '/staff' };
+  const links = { home: '/', overview: '/', customers: '/customers', staff: '/staff' };
+  const section = $derived(['customers', 'staff'].find((id) => page.url.pathname.startsWith(links[id])) ?? 'overview');
 
   start();
   $effect(() => rememberLocale(i18n.locale));
@@ -21,9 +22,9 @@
 <div class="app">
   <TopBar
     minimal={!auth.staff}
-    nav={['overview', 'staff']}
+    nav={['overview', 'customers', 'staff']}
     {links}
-    active={page.url.pathname.startsWith('/staff') ? 'staff' : 'overview'}
+    active={section}
     user={auth.staff ? displayName({ ...auth.staff, email: auth.email }) : (auth.email ?? '')}
   />
   {#if auth.ready}{@render children()}{/if}

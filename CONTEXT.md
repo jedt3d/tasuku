@@ -76,11 +76,11 @@ A person employed by PSP or one of its subsidiaries (e.g. PSPA) whose email a Ta
 _Avoid_: Member, employee, agent, user
 
 **Removed**:
-A Staff member whose access a Task Master has taken away. They can read and change nothing from that moment, but their record is kept so that Tasks still name them; a Task Master can add them again.
+A Staff member or a Customer whose access has been taken away. They can read and change nothing from that moment and get no email, but their record is kept so that Tasks and Timelines still name them. A Task Master removes a Staff member and can add them again; a Staff member who is removed is removed as a Customer too. A Customer is removed by a Task Master, or by the Owner of a Task that Customer is on, and for every Task at once, never for one; only a Task Master gives the access back. The Tasks of a removed Customer stay as they are: the Owner of each transfers or cancels it, and a Resolved one closes by itself. A removed Customer is not added to a Task.
 _Avoid_: Deleted, deactivated, disabled
 
 **Customer**:
-A person outside PSP, identified by a verified email address, who can only reach their own Requests and the Tasks they have been added to. A Staff member's email can also be added as the Customer of a Task; what they write there still counts as Staff's. Such a Staff member confirms, Reopens and cancels as the Customer does, unless they are the Owner of that Task: an Owner never confirms their own proposal.
+A person outside PSP, identified by a verified email address, who can only reach their own Requests and the Tasks they have been added to. A Staff member's email can also be added as the Customer of a Task; what they write there still counts as Staff's. Such a Staff member confirms, Reopens and cancels as the Customer does, unless they are the Owner of that Task: an Owner never confirms their own proposal. When such a Staff member is removed as a Customer they stay Staff and no longer act as the Customer of any Task; only a Task Master removes them, and every unfinished Task they are the Customer of is closed in the same action: a Resolved one becomes Done, the others Done or Cancelled as the Task Master chooses.
 _Avoid_: Guest, client, external user
 
 **Task Master**:

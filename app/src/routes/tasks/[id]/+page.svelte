@@ -18,7 +18,7 @@
   // The Task itself is embedded in both directions: `earlier` is the one it carries on from,
   // `carriedOn` the Tasks that carry it on.
   const columns =
-    'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id), earlier:earlier_task_id(id, title, status), carriedOn:tasks!earlier_task_id(id, title, status)';
+    'id, title, description, due_date, status, closes_at, owner_id, customer_id, organization_id, earlier_task_id, owner:staff!owner_id(name, email), organization:organizations(name), customer:customers(user_id, email, organization_id, removed_at), earlier:earlier_task_id(id, title, status), carriedOn:tasks!earlier_task_id(id, title, status)';
   // One row per pair of Related Tasks, the lower number first: this Task is `a` or `b`.
   const linkColumns = 'a:tasks!task_id(id, title, status), b:tasks!related_task_id(id, title, status)';
 
@@ -204,7 +204,7 @@
       supabase.from('task_collaborators').select('staff_id, staff:staff(name, email)').eq('task_id', id).order('added_at'),
       supabase.from('staff').select('user_id, name, email').is('removed_at', null).order('email'),
       supabase.from('organizations').select('id, name').order('name'),
-      supabase.from('customers').select('email').order('email'),
+      supabase.from('customers').select('email').is('removed_at', null).order('email'),
       auth.staff ? { data: [] } : supabase.rpc('staff_on_task', { task: id }),
       supabase.from('task_links').select(linkColumns).or(`task_id.eq.${id},related_task_id.eq.${id}`),
       supabase.from('timeline_entries').select('id').eq('next_task_id', id),
@@ -407,7 +407,12 @@
     busy = true;
     const { error } = await supabase.functions.invoke('invite-customer', { body: { task_id: task.id, email } });
     busy = false;
-    if (error) return (problem = error.context?.status === 400 ? 'staff.invalidEmail' : 'common.error');
+    if (error) {
+      // 403 is also "not yours to choose": the body says when it is a Customer whose access was taken away.
+      const refused = error.context?.status === 403 ? (await error.context.json().catch(() => null))?.error : null;
+      if (refused === 'customer_removed') return (problem = 'task.customerRemoved');
+      return (problem = error.context?.status === 400 ? 'staff.invalidEmail' : 'common.error');
+    }
     customerEmail = '';
     await refresh(page.params.id);
   }
@@ -570,6 +575,9 @@
             {#if task.customer}
               <li>
                 {task.customer.email}
+                {#if task.customer.removed_at}
+                  <a href="/customers"><Badge tone="red" label={t('staff.removed')} /></a>
+                {/if}
               </li>
             {:else}
               <li class="none">{t('org.noCustomer')}</li>

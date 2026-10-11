@@ -200,3 +200,14 @@ export function emailAbout(mails, kind, task, { to, language = 'en', ...values }
 }
 
 export const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Takes the access of the Customer signed in as `customer` away, acting as `client`. `finalStatus`
+// is the choice a Task Master makes for the unfinished Tasks of a Customer who is also Staff.
+// Resolves to the API's answer, error included.
+export const removeCustomer = async (client, customer, finalStatus) =>
+  client.rpc('remove_customer', { customer: await userId(customer), ...(finalStatus && { final_status: finalStatus }) });
+
+// Gives the Customer signed in as `customer` their access back, acting as `client`.
+// Resolves to the API's answer, error included.
+export const restoreCustomer = async (client, customer) =>
+  client.rpc('restore_customer', { customer: await userId(customer) });
